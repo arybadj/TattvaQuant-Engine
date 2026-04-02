@@ -2,16 +2,15 @@ FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH=/app
 
 WORKDIR /app
 
 COPY requirements.txt pyproject.toml README.md ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY investing_engine ./investing_engine
-COPY src ./src
-RUN pip install --no-cache-dir -e .
+COPY . .
+RUN pip install -e . --no-deps
+ENV PYTHONPATH=/app
 
 EXPOSE 8000
 
