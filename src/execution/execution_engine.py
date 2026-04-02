@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from datetime import date, datetime, time, timezone
+from datetime import UTC, date, datetime, time
 from enum import Enum
 from math import sqrt
 from pathlib import Path
@@ -15,9 +15,15 @@ import pandas as pd
 from src.data.timegate import PointInTimeRecord, TimeGate
 from src.features.feature_store import FeatureSnapshot, FeatureStore
 from src.feedback.feedback_loop import FinalDecision, FinalDecisionFactory
-from src.fusion.fusion_engine import AttentionFusion, FusionEngine, FusionOutput, RegimeClassification, RegimeClassifier
+from src.fusion.fusion_engine import (
+    AttentionFusion,
+    FusionEngine,
+    FusionOutput,
+    RegimeClassification,
+    RegimeClassifier,
+)
 from src.models.event_model import EventModelPipeline
-from src.models.fundamental_model import FundamentalSignal, FundamentalModelEnsemble
+from src.models.fundamental_model import FundamentalModelEnsemble, FundamentalSignal
 from src.models.market_model import MARKET_FEATURE_COLUMNS, MarketModelTrainer, MarketSignal
 from src.models.parallel import ParallelIntelligenceLayer, ParallelSignals
 from src.rl.environment import FusionState, PortfolioEnv
@@ -197,7 +203,9 @@ class PaperTradingBroker:
         reference_prices = {**self.last_prices, **(prices or {})}
         market_value = 0.0
         for symbol, position in self.positions.items():
-            market_value += float(position.quantity) * float(reference_prices.get(symbol, position.average_price))
+            market_value += float(position.quantity) * float(
+                reference_prices.get(symbol, position.average_price)
+            )
         return float(self.cash + market_value)
 
     def current_weight(self, symbol: str, prices: dict[str, float] | None = None) -> float:
@@ -223,7 +231,9 @@ class PaperTradingBroker:
         quantity = abs(float(order.size))
         if quantity <= 0.0:
             return None
-        slip_multiplier = 1.0 + (slippage_bps / 10_000.0) if side == "buy" else 1.0 - (slippage_bps / 10_000.0)
+        slip_multiplier = (
+            1.0 + (slippage_bps / 10_000.0) if side == "buy" else 1.0 - (slippage_bps / 10_000.0)
+        )
         execution_price = max(float(reference_price) * slip_multiplier, 0.01)
         if side == "buy":
             max_affordable = max((self.cash - transaction_cost) / execution_price, 0.0)
@@ -231,10 +241,18 @@ class PaperTradingBroker:
             if quantity <= 0.0:
                 return None
             notional = quantity * execution_price
-            current = self.positions.get(order.symbol, PaperPosition(quantity=0.0, average_price=0.0))
+            current = self.positions.get(
+                order.symbol, PaperPosition(quantity=0.0, average_price=0.0)
+            )
             new_quantity = current.quantity + quantity
-            average_price = execution_price if new_quantity <= 0.0 else ((current.quantity * current.average_price) + notional) / new_quantity
-            self.positions[order.symbol] = PaperPosition(quantity=float(new_quantity), average_price=float(average_price))
+            average_price = (
+                execution_price
+                if new_quantity <= 0.0
+                else ((current.quantity * current.average_price) + notional) / new_quantity
+            )
+            self.positions[order.symbol] = PaperPosition(
+                quantity=float(new_quantity), average_price=float(average_price)
+            )
             self.cash -= float(notional + transaction_cost)
         else:
             current = self.positions.get(order.symbol)
@@ -246,7 +264,9 @@ class PaperTradingBroker:
             if remaining <= 1e-9:
                 self.positions.pop(order.symbol, None)
             else:
-                self.positions[order.symbol] = PaperPosition(quantity=float(remaining), average_price=float(current.average_price))
+                self.positions[order.symbol] = PaperPosition(
+                    quantity=float(remaining), average_price=float(current.average_price)
+                )
             self.cash += float(notional - transaction_cost)
         self.mark_price(order.symbol, execution_price)
         fill = PaperFill(
@@ -257,7 +277,7 @@ class PaperTradingBroker:
             notional=float(quantity * execution_price),
             transaction_cost=float(transaction_cost),
             slippage_bps=float(slippage_bps),
-            executed_at=executed_at or datetime.now(timezone.utc),
+            executed_at=executed_at or datetime.now(UTC),
         )
         self.fills.append(fill)
         return fill
@@ -312,7 +332,10 @@ class ExecutionEngine:
                     size=float(abs(delta_quantity)),
                     value=float(value),
                     side=side,
-                    metadata={"target_weight": float(target_weight), "reference_price": float(price)},
+                    metadata={
+                        "target_weight": float(target_weight),
+                        "reference_price": float(price),
+                    },
                 )
             )
         return orders
@@ -336,7 +359,11 @@ class ExecutionEngine:
             if liquidity_filter.check(order) != OrderDecision.EXECUTE or order.value <= 0.0:
                 continue
             breakdown = cost_model.breakdown(order)
-            reference_price = float(order.metadata.get("reference_price", order.value / max(order.size, 1e-9))) if order.metadata else float(order.value / max(order.size, 1e-9))
+            reference_price = (
+                float(order.metadata.get("reference_price", order.value / max(order.size, 1e-9)))
+                if order.metadata
+                else float(order.value / max(order.size, 1e-9))
+            )
             slippage_bps = float((breakdown.slippage / max(order.value, 1e-9)) * 10_000.0)
             fill = self.broker.execute(
                 order=order,
@@ -356,10 +383,21 @@ class HeuristicMarketModel:
     def __call__(self, market_inputs: Any) -> MarketSignal:
         frame = self._to_frame(market_inputs)
         latest = frame.iloc[-1]
-        trend_signal = _clip01(0.5 + (float(latest["log_return"]) * 8.0) + ((float(latest["rsi_14"]) - 0.5) * 0.4))
-        momentum_score = _clip01(0.5 + (float(latest["macd"]) * 12.0) + (float(latest["log_return"]) * 6.0))
-        volatility_risk = _clip01((float(latest["realized_volatility"]) * 8.0) + max(float(latest["bollinger_width"]), 0.0))
-        predicted_return = ((trend_signal - 0.5) * 0.03) + ((momentum_score - 0.5) * 0.02) - ((volatility_risk - 0.5) * 0.01)
+        trend_signal = _clip01(
+            0.5 + (float(latest["log_return"]) * 8.0) + ((float(latest["rsi_14"]) - 0.5) * 0.4)
+        )
+        momentum_score = _clip01(
+            0.5 + (float(latest["macd"]) * 12.0) + (float(latest["log_return"]) * 6.0)
+        )
+        volatility_risk = _clip01(
+            (float(latest["realized_volatility"]) * 8.0)
+            + max(float(latest["bollinger_width"]), 0.0)
+        )
+        predicted_return = (
+            ((trend_signal - 0.5) * 0.03)
+            + ((momentum_score - 0.5) * 0.02)
+            - ((volatility_risk - 0.5) * 0.01)
+        )
         return MarketSignal(
             trend_signal=float(trend_signal),
             momentum_score=float(momentum_score),
@@ -382,7 +420,7 @@ class HeuristicMarketModel:
 
 
 class LivePipeline:
-    """Runnable single-symbol pipeline: features -> brains -> fusion -> uncertainty -> RL env -> execution."""
+    """Runnable single-symbol pipeline from features to execution."""
 
     def __init__(
         self,
@@ -407,7 +445,9 @@ class LivePipeline:
             event_model=EventModelPipeline(),
             fundamental_model=FundamentalModelEnsemble(),
         )
-        self.regime_classifier = RegimeClassifier(artifact_path=self.artifact_root / "regime_classifier.json")
+        self.regime_classifier = RegimeClassifier(
+            artifact_path=self.artifact_root / "regime_classifier.json"
+        )
         self.attention_fusion = AttentionFusion()
         self.uncertainty_engine = UncertaintyEngine()
         self.execution_engine = ExecutionEngine(broker=self.broker)
@@ -417,7 +457,9 @@ class LivePipeline:
         symbol = self.symbols[0]
         gate = self._build_timegate(symbol=symbol, as_of_date=as_of_date)
         snapshot = self.feature_store.materialize(symbol=symbol, as_of_date=as_of_date, gate=gate)
-        market_inputs, market_feature_frame, latest_price = self._build_market_inputs(symbol=symbol, as_of_date=as_of_date, gate=gate)
+        market_inputs, market_feature_frame, latest_price = self._build_market_inputs(
+            symbol=symbol, as_of_date=as_of_date, gate=gate
+        )
         parallel_signals = self.parallel_intelligence.run(
             market_inputs=market_inputs,
             symbol=symbol,
@@ -426,11 +468,19 @@ class LivePipeline:
             fundamental_features=self._fundamental_feature_row(snapshot),
             industry_context=f"{symbol} operates in a durable, innovation-led industry.",
         )
-        regime_history, regime_features = self._regime_inputs(snapshot=snapshot, gate=gate, as_of_date=as_of_date)
+        regime_history, regime_features = self._regime_inputs(
+            snapshot=snapshot, gate=gate, as_of_date=as_of_date
+        )
         self.regime_classifier.maybe_retrain(history=regime_history, as_of_date=as_of_date)
         regime = self.regime_classifier.predict(regime_features, as_of_date=as_of_date)
-        fused = self.attention_fusion.fuse(parallel_signals.market, parallel_signals.event, parallel_signals.fundamental, regime)
-        training_frame = market_feature_frame.iloc[:-1] if len(market_feature_frame) > 1 else market_feature_frame
+        fused = self.attention_fusion.fuse(
+            parallel_signals.market, parallel_signals.event, parallel_signals.fundamental, regime
+        )
+        training_frame = (
+            market_feature_frame.iloc[:-1]
+            if len(market_feature_frame) > 1
+            else market_feature_frame
+        )
         uncertainty = self.uncertainty_engine.evaluate(
             model=self.market_model,
             model_inputs=market_inputs,
@@ -438,7 +488,13 @@ class LivePipeline:
             as_of_date=as_of_date,
             training_features=training_frame,
         )
-        env = self._build_portfolio_env(symbol=symbol, fused=fused, uncertainty=uncertainty, regime=regime, realized_return=float(market_feature_frame["log_return"].iloc[-1]))
+        env = self._build_portfolio_env(
+            symbol=symbol,
+            fused=fused,
+            uncertainty=uncertainty,
+            regime=regime,
+            realized_return=float(market_feature_frame["log_return"].iloc[-1]),
+        )
         env.reset()
         action, decision_label, expected_return = self._policy_action(
             symbol=symbol,
@@ -450,16 +506,26 @@ class LivePipeline:
         )
         env.step(action)
         target_weight = float(env.current_weights[0])
-        market_snapshot = self._market_snapshot(symbol=symbol, snapshot=snapshot, latest_price=latest_price)
+        market_snapshot = self._market_snapshot(
+            symbol=symbol, snapshot=snapshot, latest_price=latest_price
+        )
         self.broker.mark_price(symbol, latest_price)
-        target_alpha = max(abs(expected_return["median"]) * self.broker.total_equity({symbol: latest_price}), latest_price * 0.40)
+        target_alpha = max(
+            abs(expected_return["median"]) * self.broker.total_equity({symbol: latest_price}),
+            latest_price * 0.40,
+        )
         orders = self.execution_engine.build_orders(
             target_weights={symbol: target_weight},
             latest_prices={symbol: latest_price},
             market_data={symbol: market_snapshot},
             expected_alpha={symbol: target_alpha},
         )
-        estimated_cost_bps = self._estimated_cost_bps(orders=orders, market_data={symbol: market_snapshot}, symbol=symbol, latest_price=latest_price)
+        estimated_cost_bps = self._estimated_cost_bps(
+            orders=orders,
+            market_data={symbol: market_snapshot},
+            symbol=symbol,
+            latest_price=latest_price,
+        )
         self.execution_engine.execute_orders(
             orders=orders,
             market_data={symbol: market_snapshot},
@@ -477,14 +543,21 @@ class LivePipeline:
             market_reason=self._market_reason(parallel_signals.market, fused),
             sentiment_reason=self._sentiment_reason(parallel_signals.event),
             regime_reason=self._regime_reason(regime, uncertainty),
-            risk_factors=self._risk_factors(fused=fused, uncertainty=uncertainty, event_signal=parallel_signals.event, regime=regime),
-            exit_conditions=self._exit_conditions(decision=decision_label, latest_price=latest_price, uncertainty=uncertainty),
+            risk_factors=self._risk_factors(
+                fused=fused,
+                uncertainty=uncertainty,
+                event_signal=parallel_signals.event,
+                regime=regime,
+            ),
+            exit_conditions=self._exit_conditions(
+                decision=decision_label, latest_price=latest_price, uncertainty=uncertainty
+            ),
             estimated_cost_bps=float(estimated_cost_bps),
             shift_warning=bool(uncertainty.shift_detected),
             recommended_range=self._investment_horizon(regime, decision_label),
             dynamic_adjustment=True,
         )
-        self.last_run_timestamp = datetime.now(timezone.utc)
+        self.last_run_timestamp = datetime.now(UTC)
         return decision
 
     def portfolio_state(self) -> dict[str, Any]:
@@ -561,7 +634,7 @@ class LivePipeline:
                         "roa": float(0.07 + (0.003 * index)),
                         "long_term_debt_ratio": float(0.48 - (0.012 * index)),
                         "current_ratio": float(1.15 + (0.025 * index)),
-                        "shares_outstanding": float(100.0),
+                        "shares_outstanding": 100.0,
                         "gross_margin": float(0.42 + (0.006 * index)),
                         "asset_turnover": float(0.62 + (0.01 * index)),
                     },
@@ -579,7 +652,10 @@ class LivePipeline:
                     data_type="news",
                     payload={
                         "headline": f"{symbol} reports strong growth and improving cash generation",
-                        "body": f"{symbol} highlighted strong demand, improved margins, and resilient bookings update {index}.",
+                        "body": (
+                            f"{symbol} highlighted strong demand, improved margins, "
+                            f"and resilient bookings update {index}."
+                        ),
                         "finbert_sentiment_score": float(0.56 + (0.03 * index)),
                         "topic_vector": [0.12, 0.09, 0.08, 0.18, 0.11, 0.12, 0.10, 0.20],
                         "risk_flags": risk_flags,
@@ -592,7 +668,12 @@ class LivePipeline:
                     data_as_of=timestamp.date(),
                     available_at=datetime.combine(timestamp.date(), time(hour=10)),
                     data_type="filing",
-                    payload={"summary": f"{symbol} filing notes steady liquidity, strong demand, and manageable leverage."},
+                    payload={
+                        "summary": (
+                            f"{symbol} filing notes steady liquidity, strong demand, "
+                            "and manageable leverage."
+                        )
+                    },
                 )
             )
 
@@ -633,7 +714,9 @@ class LivePipeline:
             )
         return TimeGate(records=records)
 
-    def _build_market_inputs(self, symbol: str, as_of_date: date, gate: TimeGate) -> tuple[pd.DataFrame, pd.DataFrame, float]:
+    def _build_market_inputs(
+        self, symbol: str, as_of_date: date, gate: TimeGate
+    ) -> tuple[pd.DataFrame, pd.DataFrame, float]:
         trainer = MarketModelTrainer.__new__(MarketModelTrainer)
         records = gate.get(symbol=symbol, as_of_date=as_of_date, data_type="price")
         history = pd.DataFrame(
@@ -649,7 +732,10 @@ class LivePipeline:
                 for record in records
             ]
         ).sort_values("date")
-        rows = [trainer._compute_feature_row(history.iloc[: end_index + 1].copy()) for end_index in range(59, len(history))]
+        rows = [
+            trainer._compute_feature_row(history.iloc[: end_index + 1].copy())
+            for end_index in range(59, len(history))
+        ]
         feature_frame = pd.DataFrame(rows).reset_index(drop=True)
         if feature_frame.empty:
             raise ValueError("Insufficient market history for live inference.")
@@ -691,7 +777,9 @@ class LivePipeline:
             row[key] = component_value
         return row
 
-    def _regime_inputs(self, snapshot: FeatureSnapshot, gate: TimeGate, as_of_date: date) -> tuple[pd.DataFrame, dict[str, float]]:
+    def _regime_inputs(
+        self, snapshot: FeatureSnapshot, gate: TimeGate, as_of_date: date
+    ) -> tuple[pd.DataFrame, dict[str, float]]:
         macro_records = gate.get(symbol="GLOBAL", as_of_date=as_of_date, data_type="macro")
         rows: list[dict[str, Any]] = []
         for record in macro_records:
@@ -745,7 +833,9 @@ class LivePipeline:
             include_hedge_action=True,
         )
 
-    def _market_snapshot(self, symbol: str, snapshot: FeatureSnapshot, latest_price: float) -> MarketDataSnapshot:
+    def _market_snapshot(
+        self, symbol: str, snapshot: FeatureSnapshot, latest_price: float
+    ) -> MarketDataSnapshot:
         spread_fraction = max(snapshot.time_series.bid_ask_spread / max(latest_price, 1e-9), 0.0002)
         return MarketDataSnapshot(
             symbol=symbol,
@@ -782,18 +872,26 @@ class LivePipeline:
         else:
             target_weight = min(raw_weight, 0.25)
         cash_allocation = max(0.05, 1.0 - target_weight)
-        hedge_flag = 1.0 if uncertainty.risk_level == "high" or regime.regime_name == "crisis" else 0.0
+        hedge_flag = (
+            1.0 if uncertainty.risk_level == "high" or regime.regime_name == "crisis" else 0.0
+        )
 
         market_component = float(parallel_signals.market.predicted_return_5d)
-        fundamental_component = (float(parallel_signals.fundamental.long_term_strength) - 0.5) * 0.04
+        fundamental_component = (
+            float(parallel_signals.fundamental.long_term_strength) - 0.5
+        ) * 0.04
         event_component = (float(parallel_signals.event.sentiment_score) - 0.5) * 0.03
         median = market_component + fundamental_component + event_component
         spread = max(0.01, abs(median) * 0.5)
-        return [float(target_weight), float(cash_allocation), float(hedge_flag)], decision, {
-            "min": float(median - spread),
-            "median": float(median),
-            "max": float(median + spread),
-        }
+        return (
+            [float(target_weight), float(cash_allocation), float(hedge_flag)],
+            decision,
+            {
+                "min": float(median - spread),
+                "median": float(median),
+                "max": float(median + spread),
+            },
+        )
 
     def _estimated_cost_bps(
         self,
@@ -804,28 +902,41 @@ class LivePipeline:
     ) -> float:
         if orders:
             return max(self.execution_engine.estimate_cost_bps(orders[0], market_data), 0.01)
-        hypothetical = Order(symbol=symbol, size=1.0, value=max(latest_price, 1.0), side="buy", metadata={"reference_price": latest_price})
+        hypothetical = Order(
+            symbol=symbol,
+            size=1.0,
+            value=max(latest_price, 1.0),
+            side="buy",
+            metadata={"reference_price": latest_price},
+        )
         return max(self.execution_engine.estimate_cost_bps(hypothetical, market_data), 0.01)
 
     def _fundamentals_reason(self, signal: FundamentalSignal) -> str:
         return (
-            f"Long-term strength {signal.long_term_strength:.2f}, valuation {signal.valuation_score:.2f}, "
+            f"Long-term strength {signal.long_term_strength:.2f}, "
+            f"valuation {signal.valuation_score:.2f}, "
             f"and health {signal.financial_health:.2f} support the structural view."
         )
 
     def _market_reason(self, signal: MarketSignal, fused: FusionOutput) -> str:
         return (
-            f"Trend {signal.trend_signal:.2f}, momentum {signal.momentum_score:.2f}, and fused signal "
+            f"Trend {signal.trend_signal:.2f}, "
+            f"momentum {signal.momentum_score:.2f}, "
+            "and fused signal "
             f"{fused.combined_signal:.2f} point to a {fused.short_term_bias} market bias."
         )
 
     def _sentiment_reason(self, signal: Any) -> str:
         suffix = f" Risk flags: {', '.join(signal.risk_flags)}." if signal.risk_flags else ""
-        return f"Event sentiment is {signal.event_impact} with score {signal.sentiment_score:.2f}.{suffix}"
+        return (
+            f"Event sentiment is {signal.event_impact} "
+            f"with score {signal.sentiment_score:.2f}.{suffix}"
+        )
 
     def _regime_reason(self, regime: RegimeClassification, uncertainty: UncertaintyOutput) -> str:
         return (
-            f"Regime classifier assigns {regime.regime_name} with probability {max(regime.regime_proba):.2f}; "
+            f"Regime classifier assigns {regime.regime_name} "
+            f"with probability {max(regime.regime_proba):.2f}; "
             f"uncertainty is {uncertainty.risk_level}."
         )
 
@@ -844,12 +955,22 @@ class LivePipeline:
         factors.extend(f"event:{flag}" for flag in event_signal.risk_flags)
         return factors
 
-    def _exit_conditions(self, decision: str, latest_price: float, uncertainty: UncertaintyOutput) -> list[str]:
+    def _exit_conditions(
+        self, decision: str, latest_price: float, uncertainty: UncertaintyOutput
+    ) -> list[str]:
         return [
             f"Take profit above {latest_price * 1.08:.2f}",
             f"Stop loss below {latest_price * 0.94:.2f}",
-            "Cut position if distributional shift persists" if uncertainty.shift_detected else "Review on regime change",
-            "Reduce exposure if uncertainty rises to high" if decision != "SELL" else "Remain in cash after exit",
+            (
+                "Cut position if distributional shift persists"
+                if uncertainty.shift_detected
+                else "Review on regime change"
+            ),
+            (
+                "Reduce exposure if uncertainty rises to high"
+                if decision != "SELL"
+                else "Remain in cash after exit"
+            ),
         ]
 
     def _investment_horizon(self, regime: RegimeClassification, decision: str) -> str:

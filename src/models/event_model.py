@@ -3,15 +3,15 @@
 from __future__ import annotations
 
 import json
-import math
 import os
 import re
 import urllib.error
 import urllib.request
+from collections.abc import Iterable, Sequence
 from dataclasses import asdict, dataclass, field
 from datetime import date, datetime
 from pathlib import Path
-from typing import Any, Iterable, Sequence
+from typing import Any
 
 import pandas as pd
 
@@ -116,7 +116,9 @@ class ChunkSentiment:
             "chunk": {
                 "text": self.chunk.text,
                 "symbol": self.chunk.symbol,
-                "wire_timestamp": self.chunk.wire_timestamp.isoformat() if self.chunk.wire_timestamp else "",
+                "wire_timestamp": (
+                    self.chunk.wire_timestamp.isoformat() if self.chunk.wire_timestamp else ""
+                ),
                 "chunk_index": self.chunk.chunk_index,
             },
             "positive": self.positive,
@@ -140,7 +142,9 @@ class TextChunker:
         symbol: str = "",
         published_at: str | None = None,
     ) -> list[TextChunk]:
-        timestamp = wire_timestamp or (pd.Timestamp(published_at).to_pydatetime() if published_at else None)
+        timestamp = wire_timestamp or (
+            pd.Timestamp(published_at).to_pydatetime() if published_at else None
+        )
         tokens = document.split()
         if not tokens:
             return [
@@ -194,12 +198,18 @@ class FinBERTScorer:
             label = str(result["label"]).lower()
             score = float(result["score"])
             if "pos" in label:
-                return ChunkSentiment(chunk=chunk, positive=score, negative=max(0.0, 1.0 - score), neutral=0.0)
+                return ChunkSentiment(
+                    chunk=chunk, positive=score, negative=max(0.0, 1.0 - score), neutral=0.0
+                )
             if "neg" in label:
-                return ChunkSentiment(chunk=chunk, positive=max(0.0, 1.0 - score), negative=score, neutral=0.0)
+                return ChunkSentiment(
+                    chunk=chunk, positive=max(0.0, 1.0 - score), negative=score, neutral=0.0
+                )
             neutral = score
             residual = max(0.0, 1.0 - neutral)
-            return ChunkSentiment(chunk=chunk, positive=residual / 2.0, negative=residual / 2.0, neutral=neutral)
+            return ChunkSentiment(
+                chunk=chunk, positive=residual / 2.0, negative=residual / 2.0, neutral=neutral
+            )
         except Exception:
             return self._heuristic_score(chunk)
 
@@ -222,7 +232,9 @@ class FinBERTScorer:
             return ChunkSentiment(chunk=chunk, positive=0.0, negative=0.0, neutral=1.0)
         positive_hits = sum(token in POSITIVE_LEXICON for token in tokens)
         negative_hits = sum(token in NEGATIVE_LEXICON for token in tokens)
-        normalized = max(min((positive_hits - negative_hits) / max(len(tokens) / 20.0, 1.0), 1.0), -1.0)
+        normalized = max(
+            min((positive_hits - negative_hits) / max(len(tokens) / 20.0, 1.0), 1.0), -1.0
+        )
         positive = max(normalized, 0.0)
         negative = max(-normalized, 0.0)
         neutral = max(0.0, 1.0 - max(positive, negative))
@@ -291,12 +303,25 @@ class GPT4oExtractor:
     def _heuristic_extract(self, text: str) -> EventExtraction:
         risk_flags = sorted(_scan_risk_flags(text))
         lowered = text.lower()
-        guidance_tone = "positive" if "raise guidance" in lowered or "strong demand" in lowered else "neutral"
+        guidance_tone = (
+            "positive" if "raise guidance" in lowered or "strong demand" in lowered else "neutral"
+        )
         if "cut guidance" in lowered or "guidance cut" in lowered or "soft demand" in lowered:
             guidance_tone = "negative"
-        earnings_beat = any(term in lowered for term in ("beat", "above consensus", "tops estimates"))
-        forward_guidance = "raised" if "raise guidance" in lowered else ("cut" if "cut guidance" in lowered or "guidance cut" in lowered else "unchanged")
-        return EventExtraction(risk_flags=risk_flags, guidance_tone=guidance_tone, earnings_beat=earnings_beat, forward_guidance=forward_guidance)
+        earnings_beat = any(
+            term in lowered for term in ("beat", "above consensus", "tops estimates")
+        )
+        forward_guidance = (
+            "raised"
+            if "raise guidance" in lowered
+            else ("cut" if "cut guidance" in lowered or "guidance cut" in lowered else "unchanged")
+        )
+        return EventExtraction(
+            risk_flags=risk_flags,
+            guidance_tone=guidance_tone,
+            earnings_beat=earnings_beat,
+            forward_guidance=forward_guidance,
+        )
 
 
 def _scan_risk_flags(text: str) -> set[str]:
@@ -309,11 +334,21 @@ def _scan_risk_flags(text: str) -> set[str]:
 
 
 class ChunkAggregator:
-    def aggregate(self, scored_chunks: Sequence[ChunkSentiment | dict[str, Any]], extractions: Sequence[EventExtraction]) -> EventSignal:
+    def aggregate(
+        self,
+        scored_chunks: Sequence[ChunkSentiment | dict[str, Any]],
+        extractions: Sequence[EventExtraction],
+    ) -> EventSignal:
         if not scored_chunks:
-            return EventSignal(sentiment_score=0.5, event_impact="neutral", risk_flags=[], confidence=0.0)
+            return EventSignal(
+                sentiment_score=0.5, event_impact="neutral", risk_flags=[], confidence=0.0
+            )
         normalized = [self._coerce_scored_chunk(item) for item in scored_chunks]
-        timestamps = [chunk.chunk.wire_timestamp for chunk in normalized if chunk.chunk.wire_timestamp is not None]
+        timestamps = [
+            chunk.chunk.wire_timestamp
+            for chunk in normalized
+            if chunk.chunk.wire_timestamp is not None
+        ]
         latest_timestamp = max(timestamps) if timestamps else None
         weighted_sentiment = 0.0
         total_weight = 0.0
@@ -324,10 +359,12 @@ class ChunkAggregator:
             chunk = chunk_score.chunk
             recency_boost = 1.0
             if latest_timestamp and chunk.wire_timestamp:
-                age_hours = max((latest_timestamp - chunk.wire_timestamp).total_seconds() / 3600.0, 0.0)
+                age_hours = max(
+                    (latest_timestamp - chunk.wire_timestamp).total_seconds() / 3600.0, 0.0
+                )
                 recency_boost = 1.0 / (1.0 + (age_hours / 24.0))
             weight = max(chunk.recency_weight, 0.1) * recency_boost
-            weighted_sentiment += ((chunk_score.positive - chunk_score.negative) * weight)
+            weighted_sentiment += (chunk_score.positive - chunk_score.negative) * weight
             confidence_sum += chunk_score.confidence * weight
             total_weight += weight
             risk_flags.update(_scan_risk_flags(chunk.text))
@@ -342,16 +379,28 @@ class ChunkAggregator:
             impact = "negative"
         else:
             impact = "neutral"
-        return EventSignal(sentiment_score=float(sentiment_score), event_impact=impact, risk_flags=sorted(risk_flags), confidence=float(confidence))
+        return EventSignal(
+            sentiment_score=float(sentiment_score),
+            event_impact=impact,
+            risk_flags=sorted(risk_flags),
+            confidence=float(confidence),
+        )
 
     def _coerce_scored_chunk(self, scored: ChunkSentiment | dict[str, Any]) -> ChunkSentiment:
         if isinstance(scored, ChunkSentiment):
             return scored
         chunk = scored["chunk"]
         if not isinstance(chunk, TextChunk):
-            raise TypeError("ChunkAggregator expects scored chunks to reference TextChunk instances.")
+            raise TypeError(
+                "ChunkAggregator expects scored chunks to reference TextChunk instances."
+            )
         if "positive" in scored and "negative" in scored and "neutral" in scored:
-            return ChunkSentiment(chunk=chunk, positive=float(scored["positive"]), negative=float(scored["negative"]), neutral=float(scored["neutral"]))
+            return ChunkSentiment(
+                chunk=chunk,
+                positive=float(scored["positive"]),
+                negative=float(scored["negative"]),
+                neutral=float(scored["neutral"]),
+            )
         score = float(scored.get("score", 0.0))
         confidence = max(float(scored.get("confidence", abs(score))), 0.0)
         positive = max(score, 0.0)
@@ -361,7 +410,12 @@ class ChunkAggregator:
         if total <= 0:
             return ChunkSentiment(chunk=chunk, positive=0.0, negative=0.0, neutral=1.0)
         scale = min(confidence, 1.0)
-        return ChunkSentiment(chunk=chunk, positive=(positive / total) * scale, negative=(negative / total) * scale, neutral=max(0.0, 1.0 - scale))
+        return ChunkSentiment(
+            chunk=chunk,
+            positive=(positive / total) * scale,
+            negative=(negative / total) * scale,
+            neutral=max(0.0, 1.0 - scale),
+        )
 
 
 @dataclass
@@ -375,11 +429,22 @@ class EventLabeler:
         symbol_column: str = "symbol",
         event_date_column: str = "event_date",
     ) -> Path:
-        merged = events.copy().merge(future_returns, on=[symbol_column, event_date_column], how="left")
+        merged = events.copy().merge(
+            future_returns, on=[symbol_column, event_date_column], how="left"
+        )
         merged["label_5d"] = merged["return_5d"].apply(self._threshold_label)
         merged["label_10d"] = merged["return_10d"].apply(self._threshold_label)
         merged["label_30d"] = merged["return_30d"].apply(self._threshold_label)
-        ordered_columns = [symbol_column, event_date_column, "return_5d", "return_10d", "return_30d", "label_5d", "label_10d", "label_30d"]
+        ordered_columns = [
+            symbol_column,
+            event_date_column,
+            "return_5d",
+            "return_10d",
+            "return_30d",
+            "label_5d",
+            "label_10d",
+            "label_30d",
+        ]
         merged = merged.loc[:, [column for column in ordered_columns if column in merged.columns]]
         self.labels_path.parent.mkdir(parents=True, exist_ok=True)
         merged.to_parquet(self.labels_path, index=False)
@@ -407,10 +472,19 @@ class EventModelPipeline:
         records: list[PointInTimeRecord] = []
         for data_type in ("news", "filing"):
             records.extend(gate.get(symbol=symbol, as_of_date=as_of_date, data_type=data_type))
-        documents = [self._record_to_document(record) for record in sorted(records, key=lambda item: item.available_at)]
+        documents = [
+            self._record_to_document(record)
+            for record in sorted(records, key=lambda item: item.available_at)
+        ]
         chunks: list[TextChunk] = []
         for document in documents:
-            chunks.extend(self.chunker.split(document["text"], wire_timestamp=document["wire_timestamp"], symbol=document["symbol"]))
+            chunks.extend(
+                self.chunker.split(
+                    document["text"],
+                    wire_timestamp=document["wire_timestamp"],
+                    symbol=document["symbol"],
+                )
+            )
         scored = self.finbert.score_chunks(chunks)
         extracted = [self.extractor.extract(chunk.text) for chunk in chunks]
         return self.aggregator.aggregate(scored, extracted)
@@ -436,4 +510,8 @@ class EventModelPipeline:
                 text_fields.append(str(record.payload[key]))
         if not text_fields:
             text_fields.append(json.dumps(record.payload))
-        return {"text": "\n".join(text_fields), "symbol": record.symbol, "wire_timestamp": record.available_at}
+        return {
+            "text": "\n".join(text_fields),
+            "symbol": record.symbol,
+            "wire_timestamp": record.available_at,
+        }

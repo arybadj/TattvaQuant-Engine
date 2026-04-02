@@ -75,7 +75,9 @@ class MonteCarloDropout:
         if hasattr(model, "train"):
             model.train(was_training)
         mean_prediction = sum(predictions) / max(len(predictions), 1)
-        variance = sum((prediction - mean_prediction) ** 2 for prediction in predictions) / max(len(predictions), 1)
+        variance = sum((prediction - mean_prediction) ** 2 for prediction in predictions) / max(
+            len(predictions), 1
+        )
         std = math.sqrt(variance)
         confidence = 1.0 - _clip01(std / max(self.variance_cap, 1e-6))
         return {
@@ -90,7 +92,7 @@ class MonteCarloDropout:
             return float(output.combined_signal)
         if hasattr(output, "predicted_return_5d"):
             return float(output.predicted_return_5d)
-        if isinstance(output, (int, float)):
+        if isinstance(output, int | float):
             return float(output)
         if torch is not None and hasattr(output, "detach"):
             detached = output.detach()
@@ -148,11 +150,15 @@ class DistributionalShiftDetector:
         return self.reference_path
 
     def maybe_retrain(self, training_features: pd.DataFrame, as_of_date: date) -> Path | None:
-        if self.last_trained_on is None or (as_of_date - self.last_trained_on) >= timedelta(days=30):
+        if self.last_trained_on is None or (as_of_date - self.last_trained_on) >= timedelta(
+            days=30
+        ):
             return self.fit(training_features=training_features, as_of_date=as_of_date)
         return None
 
-    def evaluate(self, live_features: pd.DataFrame, as_of_date: date | None = None) -> UncertaintyOutput:
+    def evaluate(
+        self, live_features: pd.DataFrame, as_of_date: date | None = None
+    ) -> UncertaintyOutput:
         reference = self.reference_distribution or self._load_reference()
         if reference is None:
             raise ValueError("Reference distribution is not fitted.")
@@ -161,7 +167,11 @@ class DistributionalShiftDetector:
         shift_detected = bool(mmd_score > self.threshold)
         if shift_detected:
             self._log_alert(mmd_score=mmd_score, as_of_date=as_of_date)
-            warnings.warn("Distributional shift detected. Reduce position sizes by 50% and page on-call.", DistributionalShiftWarning)
+            warnings.warn(
+                "Distributional shift detected. Reduce position sizes by 50% and page on-call.",
+                DistributionalShiftWarning,
+                stacklevel=2,
+            )
         confidence = max(0.0, min(1.0, 1.0 - (mmd_score / max(self.threshold * 2.0, 1e-6))))
         return UncertaintyOutput(
             confidence_score=float(confidence),
@@ -210,12 +220,16 @@ class DistributionalShiftDetector:
         k_xy = self._kernel_mean(x, y, gamma)
         return float(max(k_xx + k_yy - (2.0 * k_xy), 0.0))
 
-    def _kernel_mean(self, left: list[list[float]], right: list[list[float]], gamma: float) -> float:
+    def _kernel_mean(
+        self, left: list[list[float]], right: list[list[float]], gamma: float
+    ) -> float:
         total = 0.0
         count = 0
         for l_row in left:
             for r_row in right:
-                squared_distance = sum((l_value - r_value) ** 2 for l_value, r_value in zip(l_row, r_row, strict=False))
+                squared_distance = sum(
+                    (l_value - r_value) ** 2 for l_value, r_value in zip(l_row, r_row, strict=False)
+                )
                 total += math.exp(-gamma * squared_distance)
                 count += 1
         return total / max(count, 1)
@@ -253,7 +267,9 @@ class DistributionalShiftDetector:
         if mlflow is None:
             return
         try:
-            with mlflow.start_run(run_name=f"reference-distribution-{reference['as_of_date']}", nested=True):
+            with mlflow.start_run(
+                run_name=f"reference-distribution-{reference['as_of_date']}", nested=True
+            ):
                 mlflow.log_param("reference_as_of_date", reference["as_of_date"])
                 mlflow.log_param("reference_columns", json.dumps(reference["columns"]))
                 mlflow.log_artifact(str(self.reference_path))
@@ -284,9 +300,13 @@ class UncertaintyEngine:
         training_features: pd.DataFrame | None = None,
     ) -> UncertaintyOutput:
         if training_features is not None:
-            self.shift_detector.maybe_retrain(training_features=training_features, as_of_date=as_of_date)
+            self.shift_detector.maybe_retrain(
+                training_features=training_features, as_of_date=as_of_date
+            )
         mc_result = self.dropout.run(model=model, inputs=model_inputs)
-        shift_result = self.shift_detector.evaluate(live_features=live_features, as_of_date=as_of_date)
+        shift_result = self.shift_detector.evaluate(
+            live_features=live_features, as_of_date=as_of_date
+        )
         return combine_uncertainty(mc_result=mc_result, shift_result=shift_result)
 
 
@@ -294,8 +314,12 @@ def combine_uncertainty(
     mc_result: dict[str, float],
     shift_result: UncertaintyOutput,
 ) -> UncertaintyOutput:
-    confidence = max(0.0, min(1.0, (mc_result["confidence_score"] * 0.6) + (shift_result.confidence_score * 0.4)))
-    prediction_variance = float((mc_result["prediction_variance"] * 0.7) + (shift_result.mmd_score * 0.3))
+    confidence = max(
+        0.0, min(1.0, (mc_result["confidence_score"] * 0.6) + (shift_result.confidence_score * 0.4))
+    )
+    prediction_variance = float(
+        (mc_result["prediction_variance"] * 0.7) + (shift_result.mmd_score * 0.3)
+    )
     shift_detected = bool(shift_result.shift_detected)
     if shift_detected or confidence < 0.4:
         risk_level = "high"

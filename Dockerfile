@@ -5,10 +5,12 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-COPY requirements.txt ./
+COPY requirements.txt pyproject.toml README.md ./
 RUN pip install --no-cache-dir -r requirements.txt
 
+COPY investing_engine ./investing_engine
 COPY src ./src
+RUN pip install --no-cache-dir -e .
 
 EXPOSE 8000
 

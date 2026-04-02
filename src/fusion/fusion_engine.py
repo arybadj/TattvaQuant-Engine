@@ -58,8 +58,12 @@ def _market_components(signal: MarketSignal) -> list[float]:
 
 def _event_components(signal: EventSignal) -> list[float]:
     raw_sentiment = float(signal.sentiment_score)
-    sentiment_component = raw_sentiment if 0.0 <= raw_sentiment <= 1.0 else _clip01((raw_sentiment + 1.0) / 2.0)
-    impact_component = {"positive": 1.0, "neutral": 0.5, "negative": 0.0}.get(signal.event_impact, 0.5)
+    sentiment_component = (
+        raw_sentiment if 0.0 <= raw_sentiment <= 1.0 else _clip01((raw_sentiment + 1.0) / 2.0)
+    )
+    impact_component = {"positive": 1.0, "neutral": 0.5, "negative": 0.0}.get(
+        signal.event_impact, 0.5
+    )
     risk_component = _clip01(1.0 - (len(signal.risk_flags) / 5.0))
     return [sentiment_component, impact_component, risk_component]
 
@@ -179,7 +183,13 @@ class RegimeClassifier:
     Retrain weekly on rolling 2-year window.
     """
 
-    feature_columns = ["vix_level", "return_20d", "volume_zscore", "yield_curve_slope", "credit_spread"]
+    feature_columns = [
+        "vix_level",
+        "return_20d",
+        "volume_zscore",
+        "yield_curve_slope",
+        "credit_spread",
+    ]
 
     def __init__(
         self,
@@ -195,7 +205,9 @@ class RegimeClassifier:
         self.last_trained_on: date | None = None
 
     def maybe_retrain(self, history: pd.DataFrame, as_of_date: date) -> None:
-        if self.last_trained_on is None or (as_of_date - self.last_trained_on) >= timedelta(days=self.retrain_interval_days):
+        if self.last_trained_on is None or (as_of_date - self.last_trained_on) >= timedelta(
+            days=self.retrain_interval_days
+        ):
             self.fit(history=history, as_of_date=as_of_date)
 
     def fit(self, history: pd.DataFrame, as_of_date: date) -> None:
@@ -219,8 +231,12 @@ class RegimeClassifier:
         self.last_trained_on = as_of_date
         self._persist_metadata()
 
-    def predict(self, feature_row: dict[str, float], as_of_date: date | None = None) -> RegimeClassification:
-        cleaned_row = {column: float(feature_row.get(column, 0.0)) for column in self.feature_columns}
+    def predict(
+        self, feature_row: dict[str, float], as_of_date: date | None = None
+    ) -> RegimeClassification:
+        cleaned_row = {
+            column: float(feature_row.get(column, 0.0)) for column in self.feature_columns
+        }
         values = pd.DataFrame([cleaned_row], columns=self.feature_columns).fillna(0.0)
         if self.model is not None:
             probabilities = self.model.predict_proba(values.to_numpy())[0].tolist()
@@ -250,7 +266,6 @@ class RegimeClassifier:
         return self.predict(latest_row, as_of_date=as_of_date)
 
     def _infer_state_map(self, frame: pd.DataFrame, states: Any) -> dict[int, int]:
-        state_map: dict[int, int] = {}
         summary_rows: list[tuple[int, float, float, float]] = []
         frame = frame.copy()
         frame["state"] = states
@@ -264,7 +279,9 @@ class RegimeClassifier:
         crisis_state = max(summary_rows, key=lambda row: (row[2], row[3]))[0]
         bull_state = max(summary_rows, key=lambda row: row[1])[0]
         bear_candidates = [row for row in summary_rows if row[0] not in {crisis_state, bull_state}]
-        bear_state = min(bear_candidates, key=lambda row: row[1])[0] if bear_candidates else crisis_state
+        bear_state = (
+            min(bear_candidates, key=lambda row: row[1])[0] if bear_candidates else crisis_state
+        )
         assigned = {crisis_state: 3, bull_state: 0, bear_state: 1}
         for state, *_ in summary_rows:
             if state not in assigned:
@@ -301,10 +318,38 @@ class LambdaController:
     """
 
     _weights: dict[int, LambdaWeights] = {
-        0: LambdaWeights(fundamental=0.50, market=0.30, event=0.20, lambda_cvar=0.5, lambda_dd=0.3, lambda_hhi=0.10),
-        1: LambdaWeights(fundamental=0.30, market=0.45, event=0.25, lambda_cvar=1.0, lambda_dd=0.8, lambda_hhi=0.20),
-        2: LambdaWeights(fundamental=0.45, market=0.35, event=0.20, lambda_cvar=0.7, lambda_dd=0.5, lambda_hhi=0.15),
-        3: LambdaWeights(fundamental=0.20, market=0.50, event=0.30, lambda_cvar=2.0, lambda_dd=1.5, lambda_hhi=0.35),
+        0: LambdaWeights(
+            fundamental=0.50,
+            market=0.30,
+            event=0.20,
+            lambda_cvar=0.5,
+            lambda_dd=0.3,
+            lambda_hhi=0.10,
+        ),
+        1: LambdaWeights(
+            fundamental=0.30,
+            market=0.45,
+            event=0.25,
+            lambda_cvar=1.0,
+            lambda_dd=0.8,
+            lambda_hhi=0.20,
+        ),
+        2: LambdaWeights(
+            fundamental=0.45,
+            market=0.35,
+            event=0.20,
+            lambda_cvar=0.7,
+            lambda_dd=0.5,
+            lambda_hhi=0.15,
+        ),
+        3: LambdaWeights(
+            fundamental=0.20,
+            market=0.50,
+            event=0.30,
+            lambda_cvar=2.0,
+            lambda_dd=1.5,
+            lambda_hhi=0.35,
+        ),
     }
 
     def get(self, regime_id: int) -> LambdaWeights:
@@ -371,9 +416,13 @@ if torch is not None:
             attention_weights = torch.softmax(attention_logits, dim=0)
 
             combined_base = torch.sum(attention_weights * signal_scores)
-            output_features = torch.cat([signal_scores, attention_weights, prior_weights, regime_tensor], dim=0)
+            output_features = torch.cat(
+                [signal_scores, attention_weights, prior_weights, regime_tensor], dim=0
+            )
             residual_score = torch.sigmoid(self.output_head(output_features).squeeze(-1))
-            combined_signal = float(_clip01((0.7 * combined_base.item()) + (0.3 * residual_score.item())))
+            combined_signal = float(
+                _clip01((0.7 * combined_base.item()) + (0.3 * residual_score.item()))
+            )
             weight_vector = attention_weights.detach().cpu().tolist()
             feature_importance = {
                 "market": float(weight_vector[0]),
@@ -382,7 +431,9 @@ if torch is not None:
             }
             return FusionOutput(
                 combined_signal=combined_signal,
-                short_term_bias=self._short_term_bias(market_score=float(market_score.item()), event_score=float(event_score.item())),
+                short_term_bias=self._short_term_bias(
+                    market_score=float(market_score.item()), event_score=float(event_score.item())
+                ),
                 long_term_bias=self._long_term_bias(
                     fundamental_score=float(fundamental_score.item()),
                     combined_signal=combined_signal,
@@ -417,7 +468,6 @@ if torch is not None:
         ) -> FusionOutput:
             return self.forward(market_signal, event_signal, fund_signal, regime, lambda_weights)
 
-
 else:
 
     class AttentionFusion:  # pragma: no cover - import guard only
@@ -437,16 +487,30 @@ else:
             event_score = _mean(_event_components(event_signal))
             fundamental_score = _mean(_fundamental_components(fund_signal))
             signal_scores = [market_score, event_score, fundamental_score]
-            prior_weights = [active_lambdas.market, active_lambdas.event, active_lambdas.fundamental]
+            prior_weights = [
+                active_lambdas.market,
+                active_lambdas.event,
+                active_lambdas.fundamental,
+            ]
             regime_probabilities = _normalize_probabilities(list(regime.regime_proba))
-            attention_delta = self._attention_delta(signal_scores, prior_weights, regime_probabilities)
-            attention_logits = [math.log(weight + 1e-6) + delta for weight, delta in zip(prior_weights, attention_delta, strict=False)]
+            attention_delta = self._attention_delta(
+                signal_scores, prior_weights, regime_probabilities
+            )
+            attention_logits = [
+                math.log(weight + 1e-6) + delta
+                for weight, delta in zip(prior_weights, attention_delta, strict=False)
+            ]
             max_logit = max(attention_logits)
             exp_logits = [math.exp(value - max_logit) for value in attention_logits]
             total_exp = sum(exp_logits)
             normalized_attention = [value / total_exp for value in exp_logits]
-            combined_base = sum(weight * score for weight, score in zip(normalized_attention, signal_scores, strict=False))
-            residual = self._residual_score(signal_scores, normalized_attention, prior_weights, regime_probabilities)
+            combined_base = sum(
+                weight * score
+                for weight, score in zip(normalized_attention, signal_scores, strict=False)
+            )
+            residual = self._residual_score(
+                signal_scores, normalized_attention, prior_weights, regime_probabilities
+            )
             combined = _clip01((0.7 * combined_base) + (0.3 * residual))
             feature_importance = {
                 "market": float(normalized_attention[0]),
@@ -470,9 +534,18 @@ else:
         ) -> list[float]:
             base_features = signal_scores + prior_weights + regime_probabilities
             projection = [
-                0.35 * base_features[0] + 0.20 * base_features[3] + 0.15 * base_features[6] - 0.10 * base_features[8],
-                0.30 * base_features[1] + 0.25 * base_features[4] + 0.10 * base_features[7] + 0.05 * base_features[9],
-                0.25 * base_features[2] + 0.30 * base_features[5] + 0.10 * base_features[6] + 0.10 * base_features[8],
+                0.35 * base_features[0]
+                + 0.20 * base_features[3]
+                + 0.15 * base_features[6]
+                - 0.10 * base_features[8],
+                0.30 * base_features[1]
+                + 0.25 * base_features[4]
+                + 0.10 * base_features[7]
+                + 0.05 * base_features[9],
+                0.25 * base_features[2]
+                + 0.30 * base_features[5]
+                + 0.10 * base_features[6]
+                + 0.10 * base_features[8],
             ]
             hidden = [max(0.0, value) for value in projection]
             return [
@@ -489,11 +562,14 @@ else:
             regime_probabilities: list[float],
         ) -> float:
             features = signal_scores + attention_weights + prior_weights + regime_probabilities
-            score = sum(weight * feature for weight, feature in zip(
-                [0.11, 0.12, 0.15, 0.10, 0.08, 0.09, 0.07, 0.06, 0.08, 0.06, 0.04, 0.02, 0.02],
-                features,
-                strict=False,
-            ))
+            score = sum(
+                weight * feature
+                for weight, feature in zip(
+                    [0.11, 0.12, 0.15, 0.10, 0.08, 0.09, 0.07, 0.06, 0.08, 0.06, 0.04, 0.02, 0.02],
+                    features,
+                    strict=False,
+                )
+            )
             return _clip01(score)
 
         def fuse(

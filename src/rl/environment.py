@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 import numpy as np
 
@@ -114,11 +115,15 @@ class PortfolioEnv(gym.Env if gym is not None else object):
         self.returns_history: list[float] = []
         self.hedge_active = False
 
-        obs_length = (3 + 2 + len(asset_symbols) + 2 + 4 + 4)
+        obs_length = 3 + 2 + len(asset_symbols) + 2 + 4 + 4
         action_length = len(asset_symbols) + (2 if include_hedge_action else 1)
         if spaces is not None:
-            self.observation_space = spaces.Box(low=0.0, high=1.0, shape=(obs_length,), dtype=np.float32)
-            self.action_space = spaces.Box(low=0.0, high=1.0, shape=(action_length,), dtype=np.float32)
+            self.observation_space = spaces.Box(
+                low=0.0, high=1.0, shape=(obs_length,), dtype=np.float32
+            )
+            self.action_space = spaces.Box(
+                low=0.0, high=1.0, shape=(action_length,), dtype=np.float32
+            )
 
     def reset(self, *, seed: int | None = None, options: dict | None = None):
         if gym is not None:
@@ -140,13 +145,19 @@ class PortfolioEnv(gym.Env if gym is not None else object):
         self.hedge_active = hedge_flag
 
         step_returns = self.realized_returns[self.current_step]
-        gross_return = sum(step_returns.get(symbol, 0.0) * weight for symbol, weight in zip(self.asset_symbols, weights, strict=False))
+        gross_return = sum(
+            step_returns.get(symbol, 0.0) * weight
+            for symbol, weight in zip(self.asset_symbols, weights, strict=False)
+        )
         if hedge_flag:
             gross_return -= 0.002
         net_return = gross_return - transaction_cost
         self.returns_history.append(net_return)
         cumulative = sum(self.returns_history)
-        peak = max([0.0] + [sum(self.returns_history[: index + 1]) for index in range(len(self.returns_history))])
+        peak = max(
+            [0.0]
+            + [sum(self.returns_history[: index + 1]) for index in range(len(self.returns_history))]
+        )
         self.current_drawdown = max(0.0, peak - cumulative)
 
         regime = self.fusion_states[self.current_step].regime
@@ -161,7 +172,9 @@ class PortfolioEnv(gym.Env if gym is not None else object):
         )
         reward = compute_reward(portfolio, lambdas, self.current_step)
         info = {
-            "reward_breakdown": compute_reward_breakdown(portfolio, lambdas, self.current_step).to_json(),
+            "reward_breakdown": compute_reward_breakdown(
+                portfolio, lambdas, self.current_step
+            ).to_json(),
             "cash_allocation": cash_allocation,
             "hedge_active": hedge_flag,
             "position_size_multiplier": 1.0,
@@ -170,7 +183,9 @@ class PortfolioEnv(gym.Env if gym is not None else object):
         self.current_step += 1
         terminated = self.current_step >= len(self.fusion_states)
         truncated = False
-        observation = self._build_observation() if not terminated else [0.0] * len(self._build_observation())
+        observation = (
+            self._build_observation() if not terminated else [0.0] * len(self._build_observation())
+        )
         return observation, reward, terminated, truncated, info
 
     def _build_observation(self) -> list[float]:
@@ -186,7 +201,9 @@ class PortfolioEnv(gym.Env if gym is not None else object):
             risk_map.get(uncertainty.risk_level, 0.5),
         ]
         observation.extend(float(max(0.0, min(1.0, weight))) for weight in self.current_weights)
-        observation.extend([float(self.cash_allocation), float(max(0.0, min(1.0, self.current_drawdown)))])
+        observation.extend(
+            [float(self.cash_allocation), float(max(0.0, min(1.0, self.current_drawdown)))]
+        )
         observation.extend(regime_one_hot)
         observation.extend(float(max(0.0, min(1.0, value))) for value in state.regime.regime_proba)
         return observation
@@ -196,7 +213,10 @@ class PortfolioEnv(gym.Env if gym is not None else object):
         proposed_weights = values[: len(self.asset_symbols)]
         expected_without_hedge = len(self.asset_symbols) + 1
         cash_index = len(self.asset_symbols)
-        cash_allocation = max(self.min_cash, min(1.0, values[cash_index] if len(values) > cash_index else self.min_cash))
+        cash_allocation = max(
+            self.min_cash,
+            min(1.0, values[cash_index] if len(values) > cash_index else self.min_cash),
+        )
         hedge_flag = bool(len(values) > expected_without_hedge and values[-1] >= 0.5)
         capped = [min(max(weight, 0.0), self.max_single_position) for weight in proposed_weights]
         if sum(capped) > (1.0 - cash_allocation):
@@ -229,8 +249,12 @@ class PortfolioEnv(gym.Env if gym is not None else object):
             mmd_score=0.0,
         )
 
-    def _transaction_costs(self, weights: list[float], cash_allocation: float, hedge_flag: bool) -> float:
-        turnover = sum(abs(new - old) for new, old in zip(weights, self.current_weights, strict=False))
+    def _transaction_costs(
+        self, weights: list[float], cash_allocation: float, hedge_flag: bool
+    ) -> float:
+        turnover = sum(
+            abs(new - old) for new, old in zip(weights, self.current_weights, strict=False)
+        )
         cash_turnover = abs(cash_allocation - self.cash_allocation)
         hedge_cost = 0.002 if hedge_flag and not self.hedge_active else 0.0
         return float(turnover * 0.0015 + cash_turnover * 0.0005 + hedge_cost)
@@ -276,7 +300,9 @@ class PortfolioPPOTrainer:
         self._log_run(params=params, metrics=evaluation, model=model)
         return {"params": params, "metrics": evaluation, "checkpoint_path": str(checkpoint_path)}
 
-    def walk_forward_validate(self, windows: Iterable[tuple[int, int]], hyperparams: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+    def walk_forward_validate(
+        self, windows: Iterable[tuple[int, int]], hyperparams: dict[str, Any] | None = None
+    ) -> list[dict[str, Any]]:
         results = []
         for fold, _window in enumerate(windows, start=1):
             result = self.train(hyperparams=hyperparams)
@@ -321,7 +347,9 @@ class PortfolioPPOTrainer:
     def _log_run(self, params: dict[str, Any], metrics: dict[str, float], model: Any) -> None:
         self.config.artifact_root.mkdir(parents=True, exist_ok=True)
         summary_path = self.config.artifact_root / "ppo_training_summary.json"
-        summary_path.write_text(json.dumps({"params": params, "metrics": metrics}, indent=2), encoding="utf-8")
+        summary_path.write_text(
+            json.dumps({"params": params, "metrics": metrics}, indent=2), encoding="utf-8"
+        )
         if mlflow is not None:
             try:
                 with mlflow.start_run(run_name="ppo-portfolio-training", nested=True):

@@ -5,10 +5,11 @@ from __future__ import annotations
 import json
 import math
 import pickle
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
-from typing import Any, Iterable, Sequence
+from typing import Any
 
 import pandas as pd
 from pydantic import BaseModel, ConfigDict, Field
@@ -35,7 +36,7 @@ class StrictFeatureModel(BaseModel):
 
     def _ensure_no_nan(self) -> None:
         for key, value in self.model_dump(mode="python").items():
-            if isinstance(value, (int, float)) and not isinstance(value, bool):
+            if isinstance(value, int | float) and not isinstance(value, bool):
                 _validate_numeric(key, float(value))
             elif isinstance(value, list):
                 for index, item in enumerate(value):
@@ -190,7 +191,7 @@ class TimeSeriesFeaturePipeline:
 
         ema_12 = _ema(closes.tolist(), 12)
         ema_26 = _ema(closes.tolist(), 26)
-        macd_line_series = [fast - slow for fast, slow in zip(ema_12, ema_26)]
+        macd_line_series = [fast - slow for fast, slow in zip(ema_12, ema_26, strict=False)]
         macd_signal_series = _ema(macd_line_series, 9)
 
         rolling_mean_20 = float(closes.tail(20).mean())
@@ -207,7 +208,9 @@ class TimeSeriesFeaturePipeline:
         unusual_options_activity = 0.0
         if options_records:
             unusual_options_activity = float(
-                sorted(options_records, key=lambda item: item.available_at)[-1].payload.get("unusual_activity_flag", 0.0)
+                sorted(options_records, key=lambda item: item.available_at)[-1].payload.get(
+                    "unusual_activity_flag", 0.0
+                )
             )
 
         return TimeSeriesFeatures(
@@ -257,7 +260,9 @@ class FundamentalFeaturePipeline:
         ebitda_margin_latest = _safe_divide(ebitda.iloc[-1], revenue.iloc[-1])
         ebitda_margin_prior = _safe_divide(ebitda.iloc[-2], revenue.iloc[-2])
         roe_3y_average = float(roe.tail(min(len(roe), 12)).mean())
-        earnings_surprise_pct = _safe_divide(eps_actual.iloc[-1] - eps_estimate.iloc[-1], abs(eps_estimate.iloc[-1]))
+        earnings_surprise_pct = _safe_divide(
+            eps_actual.iloc[-1] - eps_estimate.iloc[-1], abs(eps_estimate.iloc[-1])
+        )
 
         return FundamentalFeatures(
             symbol=symbol,
@@ -278,13 +283,25 @@ class FundamentalFeaturePipeline:
         score = 0
         score += int(float(latest.get("net_income", 0.0)) > 0)
         score += int(float(latest.get("operating_cash_flow", 0.0)) > 0)
-        score += int(float(latest.get("operating_cash_flow", 0.0)) > float(latest.get("net_income", 0.0)))
+        score += int(
+            float(latest.get("operating_cash_flow", 0.0)) > float(latest.get("net_income", 0.0))
+        )
         score += int(float(latest.get("roa", 0.0)) > float(prior.get("roa", 0.0)))
-        score += int(float(latest.get("long_term_debt_ratio", 1.0)) < float(prior.get("long_term_debt_ratio", 1.0)))
-        score += int(float(latest.get("current_ratio", 0.0)) > float(prior.get("current_ratio", 0.0)))
-        score += int(float(latest.get("shares_outstanding", 0.0)) <= float(prior.get("shares_outstanding", 0.0)))
+        score += int(
+            float(latest.get("long_term_debt_ratio", 1.0))
+            < float(prior.get("long_term_debt_ratio", 1.0))
+        )
+        score += int(
+            float(latest.get("current_ratio", 0.0)) > float(prior.get("current_ratio", 0.0))
+        )
+        score += int(
+            float(latest.get("shares_outstanding", 0.0))
+            <= float(prior.get("shares_outstanding", 0.0))
+        )
         score += int(float(latest.get("gross_margin", 0.0)) > float(prior.get("gross_margin", 0.0)))
-        score += int(float(latest.get("asset_turnover", 0.0)) > float(prior.get("asset_turnover", 0.0)))
+        score += int(
+            float(latest.get("asset_turnover", 0.0)) > float(prior.get("asset_turnover", 0.0))
+        )
         return score
 
 
@@ -299,12 +316,23 @@ class TextFeaturePipeline:
             raise FeatureError(f"Need at least one news record for {symbol}.")
 
         news_frame = _payload_frame(news_records).sort_values("available_at")
-        transcript_frame = _payload_frame(transcript_records).sort_values("available_at") if transcript_records else pd.DataFrame()
+        transcript_frame = (
+            _payload_frame(transcript_records).sort_values("available_at")
+            if transcript_records
+            else pd.DataFrame()
+        )
 
-        sentiment_scores = news_frame.get("finbert_sentiment_score", pd.Series([0.0] * len(news_frame))).astype(float)
+        sentiment_scores = news_frame.get(
+            "finbert_sentiment_score", pd.Series([0.0] * len(news_frame))
+        ).astype(float)
         risk_flag_count = 0.0
         if "risk_flags" in news_frame.columns:
-            risk_flag_count = float(sum(len(flags) if isinstance(flags, list) else 0 for flags in news_frame["risk_flags"]))
+            risk_flag_count = float(
+                sum(
+                    len(flags) if isinstance(flags, list) else 0
+                    for flags in news_frame["risk_flags"]
+                )
+            )
 
         daily_counts = (
             news_frame.assign(news_day=pd.to_datetime(news_frame["available_at"]).dt.date)
@@ -312,12 +340,20 @@ class TextFeaturePipeline:
             .size()
             .astype(float)
         )
-        news_volume_zscore = 0.0 if len(daily_counts) < 2 else float(_rolling_zscore(daily_counts, min(len(daily_counts), 30)))
+        news_volume_zscore = (
+            0.0
+            if len(daily_counts) < 2
+            else float(_rolling_zscore(daily_counts, min(len(daily_counts), 30)))
+        )
 
         latest_topic_vector = None
-        for candidate in reversed(news_frame.get("topic_vector", pd.Series([], dtype=object)).tolist()):
+        for candidate in reversed(
+            news_frame.get("topic_vector", pd.Series([], dtype=object)).tolist()
+        ):
             if isinstance(candidate, list) and candidate:
-                latest_topic_vector = [float(value) for value in candidate[: self.topic_vector_size]]
+                latest_topic_vector = [
+                    float(value) for value in candidate[: self.topic_vector_size]
+                ]
                 break
         if latest_topic_vector is None:
             latest_topic_vector = [0.0] * self.topic_vector_size
@@ -352,7 +388,9 @@ class MacroFeaturePipeline:
 
         current_rate = float(frame["policy_rate"].iloc[-1])
         prior_rate = float(frame["policy_rate"].iloc[-2]) if len(frame) >= 2 else current_rate
-        rate_regime = 1.0 if current_rate > prior_rate else (-1.0 if current_rate < prior_rate else 0.0)
+        rate_regime = (
+            1.0 if current_rate > prior_rate else (-1.0 if current_rate < prior_rate else 0.0)
+        )
 
         current_vix = float(frame["vix"].iloc[-1])
         if current_vix < 15.0:
@@ -426,8 +464,12 @@ class FeatureStore:
     redis_url: str | None = None
     registry_path: Path = Path("config/feature_registry.yaml")
     normalization: NormalizationManager = field(default_factory=NormalizationManager)
-    time_series_pipeline: TimeSeriesFeaturePipeline = field(default_factory=TimeSeriesFeaturePipeline)
-    fundamental_pipeline: FundamentalFeaturePipeline = field(default_factory=FundamentalFeaturePipeline)
+    time_series_pipeline: TimeSeriesFeaturePipeline = field(
+        default_factory=TimeSeriesFeaturePipeline
+    )
+    fundamental_pipeline: FundamentalFeaturePipeline = field(
+        default_factory=FundamentalFeaturePipeline
+    )
     text_pipeline: TextFeaturePipeline = field(default_factory=TextFeaturePipeline)
     macro_pipeline: MacroFeaturePipeline = field(default_factory=MacroFeaturePipeline)
 
@@ -435,8 +477,12 @@ class FeatureStore:
         snapshot = FeatureSnapshot(
             symbol=symbol,
             as_of_date=as_of_date,
-            time_series=self.time_series_pipeline.compute(symbol=symbol, as_of_date=as_of_date, gate=gate),
-            fundamental=self.fundamental_pipeline.compute(symbol=symbol, as_of_date=as_of_date, gate=gate),
+            time_series=self.time_series_pipeline.compute(
+                symbol=symbol, as_of_date=as_of_date, gate=gate
+            ),
+            fundamental=self.fundamental_pipeline.compute(
+                symbol=symbol, as_of_date=as_of_date, gate=gate
+            ),
             text=self.text_pipeline.compute(symbol=symbol, as_of_date=as_of_date, gate=gate),
             macro=self.macro_pipeline.compute(symbol=symbol, as_of_date=as_of_date, gate=gate),
         )
@@ -476,7 +522,9 @@ class FeatureStore:
         self.registry_path.write_text(self._registry_yaml(), encoding="utf-8")
         return self.registry_path
 
-    def fit_normalizer(self, training_frame: pd.DataFrame, feature_columns: Sequence[str], version: str) -> Path:
+    def fit_normalizer(
+        self, training_frame: pd.DataFrame, feature_columns: Sequence[str], version: str
+    ) -> Path:
         return self.normalization.fit_on_training_window(
             training_frame=training_frame,
             feature_columns=feature_columns,
@@ -505,19 +553,40 @@ class FeatureStore:
             "macd_line": {"type": "time_series", "pipeline": "TimeSeriesFeaturePipeline"},
             "macd_signal": {"type": "time_series", "pipeline": "TimeSeriesFeaturePipeline"},
             "macd_histogram": {"type": "time_series", "pipeline": "TimeSeriesFeaturePipeline"},
-            "bollinger_band_width": {"type": "time_series", "pipeline": "TimeSeriesFeaturePipeline"},
-            "realized_volatility_20d": {"type": "time_series", "pipeline": "TimeSeriesFeaturePipeline"},
+            "bollinger_band_width": {
+                "type": "time_series",
+                "pipeline": "TimeSeriesFeaturePipeline",
+            },
+            "realized_volatility_20d": {
+                "type": "time_series",
+                "pipeline": "TimeSeriesFeaturePipeline",
+            },
             "volume_zscore_30d": {"type": "time_series", "pipeline": "TimeSeriesFeaturePipeline"},
             "bid_ask_spread": {"type": "time_series", "pipeline": "TimeSeriesFeaturePipeline"},
             "adv_30d": {"type": "time_series", "pipeline": "TimeSeriesFeaturePipeline"},
-            "unusual_options_activity": {"type": "time_series", "pipeline": "TimeSeriesFeaturePipeline"},
+            "unusual_options_activity": {
+                "type": "time_series",
+                "pipeline": "TimeSeriesFeaturePipeline",
+            },
             "revenue_growth_yoy": {"type": "fundamental", "pipeline": "FundamentalFeaturePipeline"},
             "revenue_growth_qoq": {"type": "fundamental", "pipeline": "FundamentalFeaturePipeline"},
-            "ebitda_margin_trend": {"type": "fundamental", "pipeline": "FundamentalFeaturePipeline"},
-            "free_cash_flow_yield": {"type": "fundamental", "pipeline": "FundamentalFeaturePipeline"},
+            "ebitda_margin_trend": {
+                "type": "fundamental",
+                "pipeline": "FundamentalFeaturePipeline",
+            },
+            "free_cash_flow_yield": {
+                "type": "fundamental",
+                "pipeline": "FundamentalFeaturePipeline",
+            },
             "roe_3y_average": {"type": "fundamental", "pipeline": "FundamentalFeaturePipeline"},
-            "debt_to_equity_delta": {"type": "fundamental", "pipeline": "FundamentalFeaturePipeline"},
-            "earnings_surprise_pct": {"type": "fundamental", "pipeline": "FundamentalFeaturePipeline"},
+            "debt_to_equity_delta": {
+                "type": "fundamental",
+                "pipeline": "FundamentalFeaturePipeline",
+            },
+            "earnings_surprise_pct": {
+                "type": "fundamental",
+                "pipeline": "FundamentalFeaturePipeline",
+            },
             "piotroski_f_score": {"type": "fundamental", "pipeline": "FundamentalFeaturePipeline"},
             "finbert_sentiment_score": {"type": "text", "pipeline": "TextFeaturePipeline"},
             "topic_vector": {"type": "text", "pipeline": "TextFeaturePipeline"},

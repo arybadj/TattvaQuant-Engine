@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field
@@ -86,10 +86,14 @@ if FastAPI is not None:
     def decide(request: DecideRequest) -> FinalDecision:
         pipeline = _pipeline_for(request.symbol)
         decision = pipeline.run(as_of_date=request.as_of_date)
-        timestamp = pipeline.last_run_timestamp or datetime.now(timezone.utc)
+        timestamp = pipeline.last_run_timestamp or datetime.now(UTC)
         app.state.last_run_timestamp = timestamp.isoformat()
         if logger is not None:
-            logger.info("live_decision_completed", symbol=request.symbol, as_of_date=request.as_of_date.isoformat())
+            logger.info(
+                "live_decision_completed",
+                symbol=request.symbol,
+                as_of_date=request.as_of_date.isoformat(),
+            )
         return decision
 
     @app.get("/health")
@@ -103,4 +107,3 @@ if FastAPI is not None:
     @app.get("/portfolio")
     def portfolio() -> dict[str, Any]:
         return app.state.paper_broker.portfolio_state()
-

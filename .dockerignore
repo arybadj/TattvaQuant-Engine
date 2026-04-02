@@ -14,7 +14,6 @@ config
 configs
 data
 docker
-investing_engine
 mlflow
 mlruns
 notebooks

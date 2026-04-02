@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from src.rl.environment import PPOTrainingConfig, PortfolioPPOTrainer
+from src.rl.environment import PortfolioPPOTrainer, PPOTrainingConfig
 
 
 @dataclass

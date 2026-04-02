@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import asdict, dataclass, field
-from typing import Any, Sequence
-
+from typing import Any
 
 TARGET_SHARPE = 1.0
 
@@ -50,10 +50,10 @@ def rolling_sharpe(t: int, returns: Sequence[float], window: int = 30) -> float:
         return 0.0
     mean = sum(sample) / len(sample)
     variance = sum((value - mean) ** 2 for value in sample) / max(len(sample), 1)
-    std = variance ** 0.5
+    std = variance**0.5
     if std == 0:
         return 0.0
-    return float((mean / std) * (252.0 ** 0.5))
+    return float((mean / std) * (252.0**0.5))
 
 
 def CVaR(returns: Sequence[float], alpha: float = 0.05) -> float:
@@ -84,7 +84,7 @@ def compute_reward(portfolio: PortfolioSnapshot, lambdas: Any, t: int) -> float:
 
     # Drawdown penalty - non-linear (gets worse as DD deepens)
     dd = float(portfolio.current_drawdown)
-    dd_pen = -float(lambdas.dd) * (dd ** 2)
+    dd_pen = -float(lambdas.dd) * (dd**2)
 
     # Concentration penalty (Herfindahl index)
     hhi = sum(float(weight) ** 2 for weight in portfolio.weights)
@@ -99,7 +99,7 @@ def compute_reward_breakdown(portfolio: PortfolioSnapshot, lambdas: Any, t: int)
     cvar_pen = -float(lambdas.cvar) * CVaR(portfolio.returns, alpha=0.05)
     tc_pen = -float(portfolio.transaction_costs_this_step)
     dd = float(portfolio.current_drawdown)
-    dd_pen = -float(lambdas.dd) * (dd ** 2)
+    dd_pen = -float(lambdas.dd) * (dd**2)
     hhi = herfindahl_index(portfolio.weights)
     conc_pen = -float(lambdas.hhi) * hhi
     total_reward = pnl + sharpe_pen + cvar_pen + tc_pen + dd_pen + conc_pen

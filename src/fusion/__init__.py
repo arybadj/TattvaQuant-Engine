@@ -5,12 +5,12 @@ from src.fusion.fusion_engine import (
     FusedSignal,
     FusionEngine,
     FusionOutput,
-    LambdaSet,
     LambdaController,
+    LambdaSet,
     LambdaWeights,
-    RegimeState,
     RegimeClassification,
     RegimeClassifier,
+    RegimeState,
 )
 
 __all__ = [

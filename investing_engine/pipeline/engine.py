@@ -4,8 +4,6 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from investing_engine.config import EngineSettings, load_settings
-from investing_engine.data.events import EventPublisher
-from investing_engine.data.ingestion import PointInTimeDataPipeline
 from investing_engine.execution.broker import ExecutionEngine
 from investing_engine.execution.costs import TransactionCostModel
 from investing_engine.features.store import FeatureStore
@@ -17,6 +15,8 @@ from investing_engine.models import FeatureVector, PipelineResult
 from investing_engine.rl.decision import DecisionEngine
 from investing_engine.rl.reward import RiskAdjustedReward
 from investing_engine.uncertainty.engine import UncertaintyEngine
+from src.data.events import EventPublisher
+from src.data.ingestion import PointInTimeDataPipeline
 
 try:
     from prometheus_client import Counter

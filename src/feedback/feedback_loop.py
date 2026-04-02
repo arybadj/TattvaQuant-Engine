@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
-from datetime import date, datetime
+from datetime import datetime
 from enum import Enum
 from typing import Any, Literal
 
@@ -86,7 +86,6 @@ if create_engine is not None:
     class Base(DeclarativeBase):
         pass
 
-
     class FeedbackAuditRow(Base):
         __tablename__ = "feedback_audit_events"
 
@@ -102,8 +101,12 @@ if create_engine is not None:
         prediction_correct: Mapped[bool] = mapped_column(Boolean, nullable=False)
         cost_ratio: Mapped[float] = mapped_column(Float, nullable=False)
         shift_detected: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-        retraining_triggers: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=list)
-        metadata_json: Mapped[dict[str, Any]] = mapped_column("metadata", JSON, nullable=False, default=dict)
+        retraining_triggers: Mapped[dict[str, Any]] = mapped_column(
+            JSON, nullable=False, default=list
+        )
+        metadata_json: Mapped[dict[str, Any]] = mapped_column(
+            "metadata", JSON, nullable=False, default=dict
+        )
 
 else:
     Base = object
@@ -164,7 +167,9 @@ class FeedbackLoop:
                 self._engine = None
                 self._session_factory = None
 
-    def track_closed_position(self, event: ClosedPositionEvent, shift_detected: bool = False) -> FeedbackMetrics:
+    def track_closed_position(
+        self, event: ClosedPositionEvent, shift_detected: bool = False
+    ) -> FeedbackMetrics:
         self._events.append(event)
         metrics = self._compute_metrics(event=event, shift_detected=shift_detected)
         self._store_audit_event(event=event, metrics=metrics, shift_detected=shift_detected)
@@ -245,7 +250,9 @@ class FeedbackLoop:
             recent_flags.append(rolling_sharpe(end_index, realized_pnls, 30) < 0.5)
         return all(recent_flags)
 
-    def _store_audit_event(self, event: ClosedPositionEvent, metrics: FeedbackMetrics, shift_detected: bool) -> None:
+    def _store_audit_event(
+        self, event: ClosedPositionEvent, metrics: FeedbackMetrics, shift_detected: bool
+    ) -> None:
         if self._session_factory is None or create_engine is None or FeedbackAuditRow is object:
             return
         try:

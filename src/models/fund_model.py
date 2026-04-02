@@ -1,4 +1,4 @@
-"""Compatibility wrapper for the fundamental model module name requested in the project structure."""
+"""Compatibility wrapper for the alternate fundamental-model module name."""
 
 from src.models.fundamental_model import (
     CompanyQualityModel,

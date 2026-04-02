@@ -10,7 +10,7 @@ from typing import Any
 from src.data.timegate import TimeGate
 from src.models.event_model import EventModelPipeline, EventSignal
 from src.models.fundamental_model import FundamentalModelEnsemble, FundamentalSignal
-from src.models.market_model import MarketSignal, MambaMarketModel
+from src.models.market_model import MambaMarketModel, MarketSignal
 
 
 @dataclass
@@ -41,7 +41,9 @@ class ParallelIntelligenceLayer:
         with ThreadPoolExecutor(max_workers=3) as executor:
             market_future = executor.submit(self._run_market, market_inputs)
             event_future = executor.submit(self.event_model.run, symbol, as_of_date, gate)
-            fundamental_future = executor.submit(self.fundamental_model.predict, fundamental_features, industry_context)
+            fundamental_future = executor.submit(
+                self.fundamental_model.predict, fundamental_features, industry_context
+            )
         return ParallelSignals(
             market=market_future.result(),
             event=event_future.result(),
