@@ -11,12 +11,12 @@ from investing_engine.feedback.loop import FeedbackLoop
 from investing_engine.fusion.engine import FusionEngine
 from investing_engine.fusion.regime import RegimeDetector
 from investing_engine.intelligence.parallel import ParallelIntelligence
+from investing_engine.data.events import EventPublisher
+from investing_engine.data.ingestion import PointInTimeDataPipeline
 from investing_engine.models import FeatureVector, PipelineResult
 from investing_engine.rl.decision import DecisionEngine
 from investing_engine.rl.reward import RiskAdjustedReward
 from investing_engine.uncertainty.engine import UncertaintyEngine
-from src.data.events import EventPublisher
-from src.data.ingestion import PointInTimeDataPipeline
 
 try:
     from prometheus_client import Counter
