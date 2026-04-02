@@ -1,0 +1,65 @@
+non_negotiable_rule: "Do NOT move to Phase N+1 until Phase N passes its pytest suite AND produces a positive Sharpe ratio in walk-forward backtest."
+phases:
+  - phase_id: 1
+    name: "Foundation"
+    duration: "weeks 1-2"
+    goal: "TimeGate + Feature Store + data loaders + pytest suite"
+    required_modules:
+      - "src/data/timegate.py"
+      - "src/features/feature_store.py"
+      - "src/data/loaders"
+      - "tests/test_timegate.py"
+      - "tests/test_feature_store.py"
+    gate_rule: "pytest must pass and walk-forward Sharpe must be positive"
+  - phase_id: 2
+    name: "Fundamental Signal"
+    duration: "weeks 3-4"
+    goal: "XGBoost quality model + walk-forward backtest"
+    required_modules:
+      - "src/models/fundamental_model.py"
+      - "tests/test_models_layer.py"
+    gate_rule: "prove alpha exists first with positive Sharpe"
+  - phase_id: 3
+    name: "Market Model"
+    duration: "weeks 5-6"
+    goal: "LSTM + time-series features + cost-aware backtest"
+    required_modules:
+      - "src/models/market_model.py"
+      - "src/execution/execution_engine.py"
+      - "tests/test_execution_engine.py"
+    gate_rule: "pytest must pass and cost-aware walk-forward Sharpe must be positive"
+  - phase_id: 4
+    name: "Event Model"
+    duration: "weeks 7-8"
+    goal: "FinBERT pipeline + weak supervision labeling + evaluation"
+    required_modules:
+      - "src/models/event_model.py"
+      - "tests/test_models_layer.py"
+    gate_rule: "pytest must pass and event-model walk-forward Sharpe must be positive"
+  - phase_id: 5
+    name: "Fusion + Regime"
+    duration: "week 9"
+    goal: "HMM regime classifier + attention fusion + dynamic weights"
+    required_modules:
+      - "src/fusion/fusion_engine.py"
+      - "tests/test_fusion_engine.py"
+    gate_rule: "pytest must pass and fused walk-forward Sharpe must be positive"
+  - phase_id: 6
+    name: "Uncertainty + RL"
+    duration: "weeks 10-12"
+    goal: "MC Dropout + shift detector + PPO training + full reward function"
+    required_modules:
+      - "src/uncertainty/uncertainty_engine.py"
+      - "src/rl/environment.py"
+      - "src/rl/reward.py"
+      - "tests/test_uncertainty_engine.py"
+      - "tests/test_rl_engine.py"
+    gate_rule: "pytest must pass and RL walk-forward Sharpe must be positive"
+  - phase_id: 7
+    name: "Paper Trading"
+    duration: "weeks 13-16"
+    goal: "Connect broker API and paper trade for 4 weeks minimum"
+    required_modules:
+      - "src/execution/execution_engine.py"
+      - "src/api/app.py"
+    gate_rule: "paper-trade diagnostics must stay positive after test pass and prior positive Sharpe"

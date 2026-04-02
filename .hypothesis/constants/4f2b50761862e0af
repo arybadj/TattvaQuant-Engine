@@ -1,0 +1,4 @@
+# file: C:\Users\hp\OneDrive\Documents\New project\src\fusion\fusion_engine.py
+# hypothesis_version: 6.151.10
+
+[-0.12, -0.05, 0.0, 1e-06, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.12, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.6, 0.65, 0.7, 0.75, 0.8, 1.0, 1.5, 2.0, 2.5, 5.0, 30.0, 200, 730, 'as_of_date', 'bear', 'bull', 'combined_signal', 'credit_spread', 'crisis', 'diag', 'event', 'feature_importance', 'financial_health', 'fundamental', 'fundamental_score', 'label', 'lambda_weights', 'last_trained_on', 'long_term_bias', 'market', 'negative', 'neutral', 'positive', 'regime', 'regime_name', 'return_20d', 'short_term_bias', 'sideways', 'state', 'state_map', 'utf-8', 'valuation_score', 'vix_level', 'volume_zscore', 'yield_curve_slope']

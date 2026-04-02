@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-header">
+  <div>
+    <p class="eyebrow">Hiring funnel</p>
+    <h2>Analytics</h2>
+  </div>
+</section>
+
+<section class="card-grid" id="analyticsCards">
+  <article class="metric-card loading-card">Loading analytics...</article>
+</section>
+
+<section class="panel">
+  <h3>Funnel Breakdown</h3>
+  <div id="funnelList" class="empty-state">Fetching funnel...</div>
+</section>
+{% endblock %}
+

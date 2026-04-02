@@ -1,0 +1,4 @@
+# file: C:\Users\hp\OneDrive\Documents\New project\src\models\market_model.py
+# hypothesis_version: 6.151.10
+
+[0.0, 1e-06, 1e-05, 0.0001, 0.0008, 0.001, 0.0015, 0.002, 0.0035, 0.004, 0.05, 0.08, 0.2, 0.3, 0.5, 0.92, 0.94, 1.0, 4.0, 10.0, 12.0, 18.0, 20.0, 50.0, 90.0, 100.0, 50000.0, 100000.0, 1000000.0, 128, 'Close', 'High', 'Low', 'M', 'Open', 'Volume', 'as_of_date', 'auto', 'available_at', 'batch_size', 'bollinger_width', 'close', 'cpu', 'date', 'directional_accuracy', 'end', 'epochs', 'folds', 'forward_return_5d', 'high', 'learning_rate', 'log_return', 'low', 'macd', 'market', 'open', 'realized_volatility', 'records', 'rsi_14', 'symbol', 'test_end', 'test_start', 'ticker', 'train_end', 'train_loss', 'train_start', 'utf-8', 'validation_loss', 'volume', 'volume_zscore', 'weight_decay', 'yfinance']

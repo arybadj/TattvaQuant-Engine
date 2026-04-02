@@ -1,0 +1,14 @@
+{
+  "fold": 9,
+  "train_loss": 0.3189530024925868,
+  "validation_loss": 0.25345578789711,
+  "directional_accuracy": 0.47619047619047616,
+  "train_start": "2022-11-01T00:00:00",
+  "train_end": "2024-10-31T23:59:59",
+  "test_start": "2024-11-01T00:00:00",
+  "test_end": "2024-11-29T00:00:00",
+  "train_samples": 523,
+  "test_samples": 21,
+  "max_train_available_at": "2024-10-31T16:00:00",
+  "no_lookahead": true
+}

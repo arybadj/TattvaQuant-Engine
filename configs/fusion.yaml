@@ -1,0 +1,29 @@
+regimes:
+  bull:
+    fundamental: 0.50
+    market: 0.30
+    event: 0.20
+    lambda_cvar: 0.5
+    lambda_dd: 0.3
+    lambda_hhi: 0.10
+  bear:
+    fundamental: 0.30
+    market: 0.45
+    event: 0.25
+    lambda_cvar: 1.2
+    lambda_dd: 0.8
+    lambda_hhi: 0.20
+  sideways:
+    fundamental: 0.45
+    market: 0.35
+    event: 0.20
+    lambda_cvar: 0.8
+    lambda_dd: 0.5
+    lambda_hhi: 0.15
+  crisis:
+    fundamental: 0.20
+    market: 0.50
+    event: 0.30
+    lambda_cvar: 2.0
+    lambda_dd: 1.5
+    lambda_hhi: 0.35

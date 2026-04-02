@@ -1,0 +1,5 @@
+rolling_sharpe_threshold: 0.5
+rolling_sharpe_consecutive_days: 5
+prediction_accuracy_threshold: 0.52
+prediction_accuracy_window: 20
+cost_ratio_alert_threshold: 0.30

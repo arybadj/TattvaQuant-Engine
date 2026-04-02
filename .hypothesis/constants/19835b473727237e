@@ -1,0 +1,4 @@
+# file: C:\Users\hp\OneDrive\Documents\New project\investing_engine\intelligence\market.py
+# hypothesis_version: 6.151.10
+
+[-1.0, 0.05, 0.2, 0.4, 0.6, 0.95, 1.0, 2.0, 8.0, 'momentum_20d', 'momentum_5d']

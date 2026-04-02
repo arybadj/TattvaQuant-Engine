@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ title if title else "Agentic Interview Scheduler" }}</title>
+  <link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body data-page="{{ page if page else '' }}">
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark">AI</span>
+        <div>
+          <h1>TalentFlow</h1>
+          <p>Agentic recruiting ops</p>
+        </div>
+      </div>
+      <nav class="nav">
+        <a href="/">Dashboard</a>
+        <a href="/upload">Resume Upload</a>
+        <a href="/decisions">HR Decision Panel</a>
+        <a href="/status">Interview Status</a>
+        <a href="/analytics">Analytics</a>
+      </nav>
+      <button class="ghost-button" id="logoutButton" type="button">Logout</button>
+    </aside>
+    <main class="content">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
+

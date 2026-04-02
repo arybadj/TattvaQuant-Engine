@@ -1,0 +1,4 @@
+chunk_size_tokens: 512
+label_positive_threshold: 0.05
+label_negative_threshold: -0.05
+labels_output: data/labels/event_labels.parquet

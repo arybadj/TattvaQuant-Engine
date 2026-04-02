@@ -1,0 +1,4 @@
+# file: C:\Users\hp\OneDrive\Documents\New project\investing_engine\pipeline\engine.py
+# hypothesis_version: 6.151.10
+
+[-1.0, 0.0, 0.5, 0.75, 1.0, 'as_of_date', 'decision_count', 'event', 'news_count', 'order_count', 'regime']

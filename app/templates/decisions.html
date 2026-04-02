@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-header">
+  <div>
+    <p class="eyebrow">Human in the loop</p>
+    <h2>HR Decision Panel</h2>
+  </div>
+</section>
+
+<section class="panel">
+  <form id="decisionForm" class="stack">
+    <label>Candidate ID<input type="number" name="candidate_id" required></label>
+    <label>Decision
+      <select name="decision">
+        <option value="approved">Approve</option>
+        <option value="rejected">Reject</option>
+        <option value="hold">Hold</option>
+      </select>
+    </label>
+    <label>Notes<textarea name="notes" rows="4" placeholder="Add reviewer context"></textarea></label>
+    <button type="submit">Submit Decision</button>
+  </form>
+  <p id="decisionStatus" class="status-line">Awaiting reviewer action</p>
+</section>
+{% endblock %}
+

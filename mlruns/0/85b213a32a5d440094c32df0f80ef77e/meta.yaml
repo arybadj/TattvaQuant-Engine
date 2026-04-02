@@ -1,0 +1,15 @@
+artifact_uri: file:///C:/Users/hp/OneDrive/Documents/New%20project/mlruns/0/85b213a32a5d440094c32df0f80ef77e/artifacts
+end_time: 1775036804501
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 85b213a32a5d440094c32df0f80ef77e
+run_name: reference-distribution-2026-03-01
+run_uuid: 85b213a32a5d440094c32df0f80ef77e
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1775036804404
+status: 3
+tags: []
+user_id: hp

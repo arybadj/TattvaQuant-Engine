@@ -1,0 +1,2 @@
+[console_scripts]
+investing-engine = investing_engine.cli:main

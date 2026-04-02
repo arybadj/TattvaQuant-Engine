@@ -1,0 +1,4 @@
+# file: C:\Users\hp\OneDrive\Documents\New project\src\uncertainty\uncertainty_engine.py
+# hypothesis_version: 6.151.10
+
+[0.0, 1e-06, 0.05, 0.1, 0.3, 0.4, 0.5, 0.6, 0.7, 1.0, 2.0, 100, 'action', 'as_of_date', 'bandwidth', 'columns', 'combined_signal', 'confidence_score', 'density_model', 'detach', 'event', 'gaussian', 'high', 'kde', 'low', 'mean_prediction', 'means', 'medium', 'mmd_score', 'number', 'page_on_call', 'predicted_return_5d', 'prediction_variance', 'reference_as_of_date', 'reference_columns', 'samples', 'score_samples_mean', 'stds', 'summary_stats', 'tolist', 'train', 'training', 'type', 'utf-8']

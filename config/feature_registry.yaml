@@ -1,0 +1,124 @@
+features:
+  log_return_1d:
+    type: time_series
+    pipeline: TimeSeriesFeaturePipeline
+  log_return_5d:
+    type: time_series
+    pipeline: TimeSeriesFeaturePipeline
+  log_return_20d:
+    type: time_series
+    pipeline: TimeSeriesFeaturePipeline
+  rolling_mean_10d:
+    type: time_series
+    pipeline: TimeSeriesFeaturePipeline
+  rolling_mean_20d:
+    type: time_series
+    pipeline: TimeSeriesFeaturePipeline
+  rolling_mean_50d:
+    type: time_series
+    pipeline: TimeSeriesFeaturePipeline
+  rolling_std_10d:
+    type: time_series
+    pipeline: TimeSeriesFeaturePipeline
+  rolling_std_20d:
+    type: time_series
+    pipeline: TimeSeriesFeaturePipeline
+  rolling_std_50d:
+    type: time_series
+    pipeline: TimeSeriesFeaturePipeline
+  rsi_14:
+    type: time_series
+    pipeline: TimeSeriesFeaturePipeline
+  macd_line:
+    type: time_series
+    pipeline: TimeSeriesFeaturePipeline
+  macd_signal:
+    type: time_series
+    pipeline: TimeSeriesFeaturePipeline
+  macd_histogram:
+    type: time_series
+    pipeline: TimeSeriesFeaturePipeline
+  bollinger_band_width:
+    type: time_series
+    pipeline: TimeSeriesFeaturePipeline
+  realized_volatility_20d:
+    type: time_series
+    pipeline: TimeSeriesFeaturePipeline
+  volume_zscore_30d:
+    type: time_series
+    pipeline: TimeSeriesFeaturePipeline
+  bid_ask_spread:
+    type: time_series
+    pipeline: TimeSeriesFeaturePipeline
+  adv_30d:
+    type: time_series
+    pipeline: TimeSeriesFeaturePipeline
+  unusual_options_activity:
+    type: time_series
+    pipeline: TimeSeriesFeaturePipeline
+  revenue_growth_yoy:
+    type: fundamental
+    pipeline: FundamentalFeaturePipeline
+  revenue_growth_qoq:
+    type: fundamental
+    pipeline: FundamentalFeaturePipeline
+  ebitda_margin_trend:
+    type: fundamental
+    pipeline: FundamentalFeaturePipeline
+  free_cash_flow_yield:
+    type: fundamental
+    pipeline: FundamentalFeaturePipeline
+  roe_3y_average:
+    type: fundamental
+    pipeline: FundamentalFeaturePipeline
+  debt_to_equity_delta:
+    type: fundamental
+    pipeline: FundamentalFeaturePipeline
+  earnings_surprise_pct:
+    type: fundamental
+    pipeline: FundamentalFeaturePipeline
+  piotroski_f_score:
+    type: fundamental
+    pipeline: FundamentalFeaturePipeline
+  finbert_sentiment_score:
+    type: text
+    pipeline: TextFeaturePipeline
+  topic_vector:
+    type: text
+    pipeline: TextFeaturePipeline
+  news_volume_zscore:
+    type: text
+    pipeline: TextFeaturePipeline
+  earnings_call_tone_delta:
+    type: text
+    pipeline: TextFeaturePipeline
+  risk_flag_count:
+    type: text
+    pipeline: TextFeaturePipeline
+  rate_regime:
+    type: macro
+    pipeline: MacroFeaturePipeline
+  sector_relative_strength:
+    type: macro
+    pipeline: MacroFeaturePipeline
+  ff5_market_beta:
+    type: macro
+    pipeline: MacroFeaturePipeline
+  ff5_size_beta:
+    type: macro
+    pipeline: MacroFeaturePipeline
+  ff5_value_beta:
+    type: macro
+    pipeline: MacroFeaturePipeline
+  ff5_profitability_beta:
+    type: macro
+    pipeline: MacroFeaturePipeline
+  ff5_investment_beta:
+    type: macro
+    pipeline: MacroFeaturePipeline
+  currency_momentum_usdinr:
+    type: macro
+    pipeline: MacroFeaturePipeline
+  vix_regime:
+    type: macro
+    pipeline: MacroFeaturePipeline

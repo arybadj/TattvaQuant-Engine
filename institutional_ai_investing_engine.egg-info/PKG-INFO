@@ -1,0 +1,95 @@
+Metadata-Version: 2.4
+Name: institutional-ai-investing-engine
+Version: 0.1.0
+Summary: Institution-grade quant + AI hybrid investing engine prototype.
+Author: Codex
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: fastapi==0.115.5
+Requires-Dist: pydantic==2.10.3
+Requires-Dist: structlog==24.4.0
+Requires-Dist: uvicorn==0.32.0
+Provides-Extra: dev
+Requires-Dist: black==24.10.0; extra == "dev"
+Requires-Dist: pytest==8.3.4; extra == "dev"
+Requires-Dist: pytest-cov==6.0.0; extra == "dev"
+Requires-Dist: ruff==0.7.4; extra == "dev"
+Requires-Dist: hypothesis==6.123.1; extra == "dev"
+Provides-Extra: ml
+Requires-Dist: torch==2.5.1; extra == "ml"
+Requires-Dist: transformers==4.46.3; extra == "ml"
+Requires-Dist: xgboost==2.1.3; extra == "ml"
+Requires-Dist: lightgbm==4.5.0; extra == "ml"
+Requires-Dist: stable-baselines3==2.4.0; extra == "ml"
+Requires-Dist: gymnasium==1.0.0; extra == "ml"
+Requires-Dist: scikit-learn==1.5.2; extra == "ml"
+Provides-Extra: data
+Requires-Dist: pandas==2.2.3; extra == "data"
+Requires-Dist: polars==1.14.0; extra == "data"
+Requires-Dist: pyarrow==18.0.0; extra == "data"
+Requires-Dist: redis==5.2.0; extra == "data"
+Requires-Dist: SQLAlchemy==2.0.36; extra == "data"
+Requires-Dist: psycopg[binary]==3.2.3; extra == "data"
+Requires-Dist: kafka-python==2.0.2; extra == "data"
+Requires-Dist: yfinance==0.2.54; extra == "data"
+Provides-Extra: infra
+Requires-Dist: apache-airflow==2.10.3; extra == "infra"
+Requires-Dist: mlflow==2.17.2; extra == "infra"
+Requires-Dist: prometheus-client==0.21.0; extra == "infra"
+
+# Institution-Grade AI Investing Engine
+
+Modular quant + AI hybrid investing system prototype built around strict point-in-time controls.
+
+## What This Prototype Covers
+
+- Point-in-time market and news ingestion with mandatory `TimeGate(as_of_date)` filtering
+- Feature engineering and offline/online feature persistence
+- Parallel intelligence layer for market, text, and tabular signals
+- Regime detection and regime-aware signal fusion
+- Uncertainty estimation from model disagreement and data quality
+- Risk-adjusted RL-style decision layer with explicit transaction-cost deduction
+- Execution layer with commission, spread, and impact modeling
+- Feedback capture for realized outcomes
+- JSON-compatible end-to-end output for downstream systems
+
+## Package Layout
+
+```text
+investing_engine/
+  data/          # point-in-time ingestion and event publishing
+  features/      # offline and online feature storage
+  intelligence/  # parallel alpha models
+  fusion/        # regime detection and signal fusion
+  uncertainty/   # confidence and dispersion modeling
+  rl/            # reward and decision engine
+  execution/     # cost model and order generation
+  feedback/      # realized outcome capture
+  pipeline/      # orchestration
+```
+
+## Quick Start
+
+```bash
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python -m investing_engine.cli --pretty
+```
+
+## Environment
+
+Copy `.env.example` to `.env` and adjust the values if you want to use live services.
+
+## Testing
+
+```bash
+pytest
+```
+
+## Design Notes
+
+- Every market and news read is gated by `TimeGate`.
+- Transaction costs are estimated before order generation and included in the decision context.
+- The provided prompt excerpt did not include the final RL reward equation, so the prototype isolates reward weights in `investing_engine/config.py` for easy replacement.
+- The enforced prototype build sequence lives in `configs/build_sequence.yaml`, with validation helpers in `src/project/build_sequence.py`.

@@ -1,0 +1,5 @@
+algorithm: PPO
+total_timesteps: 1000000
+quarterly_retrain_steps: 63
+optuna_trials: 100
+target_sharpe: 1.0

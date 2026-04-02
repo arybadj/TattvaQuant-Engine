@@ -1,0 +1,4 @@
+# file: C:\Users\hp\OneDrive\Documents\New project\src\rl\environment.py
+# hypothesis_version: 6.151.10
+
+[-1.0, 0.0, 1e-06, 1e-05, 0.0003, 0.0005, 0.0015, 0.002, 0.05, 0.2, 0.25, 0.35, 0.5, 0.9, 0.95, 0.99, 0.999, 1.0, 100, 128, 512, 1024, 2048, 10000, 'MlpPolicy', 'average_reward', 'batch_size', 'best_params', 'best_value', 'cash_allocation', 'checkpoint_path', 'cpu', 'device', 'fold', 'gamma', 'hedge_active', 'high', 'learning_rate', 'low', 'maximize', 'mean_reward', 'medium', 'metrics', 'models', 'models/ppo_agent.zip', 'n_steps', 'net_arch', 'params', 'policy_kwargs', 'render_modes', 'reward_breakdown', 'save', 'unknown', 'utf-8']

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-header">
+  <div>
+    <p class="eyebrow">Operations overview</p>
+    <h2>Recruiting Dashboard</h2>
+  </div>
+  <a class="button-link" href="/upload">Upload Candidate</a>
+</section>
+
+<section class="card-grid" id="summaryCards">
+  <article class="metric-card loading-card">Loading summary...</article>
+</section>
+
+<section class="panel">
+  <div class="panel-header">
+    <h3>Workflow Signals</h3>
+    <span class="badge pending">Live</span>
+  </div>
+  <div id="workflowStatus" class="empty-state">Fetching analytics...</div>
+</section>
+{% endblock %}
+

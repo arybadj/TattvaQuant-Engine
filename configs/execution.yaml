@@ -1,0 +1,5 @@
+brokerage_bps: 3
+stt_bps: 10
+max_adv_participation: 0.05
+slippage_spread_multiplier: 0.5
+impact_coefficient: 0.1

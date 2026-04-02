@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-header">
+  <div>
+    <p class="eyebrow">Candidate view</p>
+    <h2>Candidate Detail</h2>
+  </div>
+  <span class="badge pending" id="candidateStatusBadge">Loading</span>
+</section>
+
+<section class="detail-grid" id="candidateDetail" data-candidate-id="{{ candidate_id }}">
+  <article class="panel">Loading candidate details...</article>
+</section>
+{% endblock %}
+

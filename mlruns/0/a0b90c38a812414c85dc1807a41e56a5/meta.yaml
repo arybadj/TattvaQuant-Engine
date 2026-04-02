@@ -1,0 +1,15 @@
+artifact_uri: file:///C:/Users/hp/OneDrive/Documents/New%20project/mlruns/0/a0b90c38a812414c85dc1807a41e56a5/artifacts
+end_time: 1774868184895
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: a0b90c38a812414c85dc1807a41e56a5
+run_name: market-model-fold-6
+run_uuid: a0b90c38a812414c85dc1807a41e56a5
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1774868184777
+status: 3
+tags: []
+user_id: hp

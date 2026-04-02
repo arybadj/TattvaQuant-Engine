@@ -1,0 +1,15 @@
+artifact_uri: file:///C:/Users/hp/OneDrive/Documents/New%20project/mlruns/0/ecb4a97662074abdb82f4e7e35f23561/artifacts
+end_time: 1774871866714
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: ecb4a97662074abdb82f4e7e35f23561
+run_name: ppo-portfolio-training
+run_uuid: ecb4a97662074abdb82f4e7e35f23561
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1774871866584
+status: 3
+tags: []
+user_id: hp

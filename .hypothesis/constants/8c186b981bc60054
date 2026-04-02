@@ -1,0 +1,4 @@
+# file: C:\Users\hp\OneDrive\Documents\New project\investing_engine\data\providers.py
+# hypothesis_version: 6.151.10
+
+[-0.6, -0.025, 0.0, 0.0003, 0.0008, 0.01, 0.025, 0.8, 1.0, 2.0, 100.0, -100000, 100000, 1000000, 'Close', 'Date', 'High', 'Low', 'N', 'Open', 'Volume', 'records', 'to_pydatetime']

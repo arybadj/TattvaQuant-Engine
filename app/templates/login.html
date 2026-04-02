@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | TalentFlow</title>
+  <link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body class="login-body">
+  <section class="login-card">
+    <p class="eyebrow">Multi-tenant AI recruiting</p>
+    <h1>Sign in to TalentFlow</h1>
+    <p class="muted">Use your company credentials to access interview orchestration.</p>
+    <form id="loginForm" class="stack">
+      <label>Email<input type="email" name="email" required value="admin@acme.example"></label>
+      <label>Password<input type="password" name="password" required value="Password123!"></label>
+      <button type="submit">Sign In</button>
+    </form>
+    <p class="status-line" id="loginStatus">Waiting for credentials</p>
+  </section>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
+

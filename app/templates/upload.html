@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-header">
+  <div>
+    <p class="eyebrow">Candidate intake</p>
+    <h2>Resume Upload</h2>
+  </div>
+</section>
+
+<section class="panel">
+  <form id="uploadForm" class="stack">
+    <label>Job ID<input type="number" name="job_id" required value="1"></label>
+    <label>Full Name<input type="text" name="full_name" required></label>
+    <label>Email<input type="email" name="email" required></label>
+    <label>Phone<input type="text" name="phone"></label>
+    <label>Resume PDF<input type="file" name="resume" accept=".pdf,.txt" required></label>
+    <button type="submit">Upload and Queue Analysis</button>
+  </form>
+  <p id="uploadStatus" class="status-line">Ready for upload</p>
+</section>
+{% endblock %}
+

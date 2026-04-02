@@ -1,0 +1,258 @@
+:root {
+  --bg: #f4efe6;
+  --panel: rgba(255, 252, 246, 0.88);
+  --panel-strong: #fffaf2;
+  --ink: #18222d;
+  --muted: #6b7683;
+  --line: rgba(24, 34, 45, 0.12);
+  --accent: #c65c2f;
+  --accent-dark: #8f3f1f;
+  --success: #1e8a5b;
+  --warning: #b78111;
+  --danger: #b33d3d;
+  --shadow: 0 20px 60px rgba(64, 38, 18, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at top right, rgba(198, 92, 47, 0.14), transparent 28%),
+    linear-gradient(180deg, #f7f2e8 0%, #f0eadf 100%);
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+.button-link {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.9rem 1.2rem;
+  background: var(--accent);
+  color: white;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+input,
+textarea,
+select {
+  width: 100%;
+  margin-top: 0.45rem;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 0.9rem 1rem;
+  background: white;
+  font: inherit;
+}
+
+label {
+  display: block;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 260px 1fr;
+}
+
+.sidebar {
+  padding: 2rem 1.4rem;
+  border-right: 1px solid var(--line);
+  background: rgba(255, 247, 236, 0.75);
+  backdrop-filter: blur(20px);
+}
+
+.brand {
+  display: flex;
+  gap: 0.9rem;
+  align-items: center;
+  margin-bottom: 2.2rem;
+}
+
+.brand h1,
+.page-header h2,
+.panel h3 {
+  margin: 0;
+  font-family: "Trebuchet MS", "Gill Sans", sans-serif;
+}
+
+.brand p,
+.muted,
+.status-line,
+.empty-state {
+  color: var(--muted);
+}
+
+.brand-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #dd7b4f, #8f3f1f);
+  color: white;
+  font-family: "Trebuchet MS", sans-serif;
+  font-weight: 800;
+}
+
+.nav {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.nav a,
+.ghost-button {
+  padding: 0.85rem 1rem;
+  border-radius: 16px;
+  background: transparent;
+  color: var(--ink);
+}
+
+.nav a:hover,
+.ghost-button:hover {
+  background: rgba(198, 92, 47, 0.12);
+}
+
+.ghost-button {
+  margin-top: 2rem;
+  width: 100%;
+}
+
+.content {
+  padding: 2rem;
+}
+
+.page-header,
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.74rem;
+  margin: 0 0 0.35rem;
+  color: var(--accent-dark);
+}
+
+.card-grid,
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin: 1.4rem 0;
+}
+
+.panel,
+.metric-card {
+  background: var(--panel);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 24px;
+  padding: 1.25rem;
+  box-shadow: var(--shadow);
+}
+
+.metric-card strong {
+  display: block;
+  font-size: 2rem;
+  margin-top: 0.6rem;
+  font-family: "Trebuchet MS", sans-serif;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border-radius: 999px;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.badge.pending { background: rgba(183, 129, 17, 0.14); color: var(--warning); }
+.badge.completed,
+.badge.scheduled { background: rgba(30, 138, 91, 0.14); color: var(--success); }
+.badge.failed,
+.badge.rejected { background: rgba(179, 61, 61, 0.14); color: var(--danger); }
+.badge.email_sent,
+.badge.call_pending,
+.badge.approved { background: rgba(198, 92, 47, 0.14); color: var(--accent-dark); }
+
+.stack {
+  display: grid;
+  gap: 1rem;
+}
+
+.status-line {
+  margin-top: 1rem;
+}
+
+.login-body {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+}
+
+.login-card {
+  width: min(460px, 100%);
+  background: var(--panel-strong);
+  border-radius: 28px;
+  padding: 2rem;
+  box-shadow: var(--shadow);
+}
+
+.kv {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  text-align: left;
+  padding: 0.8rem;
+  border-bottom: 1px solid var(--line);
+}
+
+@media (max-width: 900px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .content {
+    padding: 1.2rem;
+  }
+}
+

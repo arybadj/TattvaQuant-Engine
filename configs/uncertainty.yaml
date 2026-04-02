@@ -1,0 +1,4 @@
+mc_dropout_samples: 100
+variance_cap: 1.0
+shift_threshold: 0.15
+reference_retrain_days: 30
