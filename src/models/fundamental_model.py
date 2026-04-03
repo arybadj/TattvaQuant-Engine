@@ -14,6 +14,10 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from investing_engine.data.providers import (
+    AlphaVantageFundamentalProvider,
+    FundamentalScoreSnapshot,
+)
 from src.data.timegate import LookaheadError, TimeGate
 
 PIOTROSKI_COMPONENT_COLUMNS = [
@@ -140,7 +144,17 @@ class CompanyQualityModel:
     def predict(self, features: dict[str, float]) -> CompanyQualitySignal:
         return self.predict_company_quality(features)
 
-    def predict_company_quality(self, features: dict[str, float]) -> CompanyQualitySignal:
+    def predict_company_quality(
+        self,
+        features: dict[str, float],
+        provider_snapshot: FundamentalScoreSnapshot | None = None,
+    ) -> CompanyQualitySignal:
+        if provider_snapshot is not None:
+            return CompanyQualitySignal(
+                fundamental_score=float(provider_snapshot.fundamental_score),
+                valuation_score=float(provider_snapshot.valuation_score),
+                health_score=float(provider_snapshot.financial_health),
+            )
         row = self._feature_row(features)
         if any(pd.isna(value) for value in row.values()):
             raise ValueError("Feature rows must not contain NaN values.")
@@ -682,15 +696,20 @@ class FundamentalModelEnsemble:
         company_quality: CompanyQualityModel | None = None,
         industry_history: IndustryHistoryModel | None = None,
         future_industry: FutureIndustryModel | None = None,
+        fundamental_provider: AlphaVantageFundamentalProvider | None = None,
     ) -> None:
         self.company_quality = company_quality or CompanyQualityModel()
         self.industry_history = industry_history or IndustryHistoryModel()
         self.future_industry = future_industry or FutureIndustryModel()
+        self.fundamental_provider = fundamental_provider or AlphaVantageFundamentalProvider()
 
     def predict(
         self, feature_row: dict[str, float], industry_context: str = ""
     ) -> FundamentalSignal:
-        company = self.company_quality.predict_company_quality(feature_row)
+        provider_snapshot = self.fundamental_provider.load(str(feature_row.get("symbol", "")))
+        company = self.company_quality.predict_company_quality(
+            feature_row, provider_snapshot=provider_snapshot
+        )
         history = self.industry_history.predict(feature_row)
         future = self.future_industry.predict(feature_row, industry_context=industry_context)
         long_term_strength = _clip01(
